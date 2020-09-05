@@ -16,7 +16,7 @@ var portFlag = flag.Int("port", 10000, "Port for SnackInventory to listen on.")
 
 type snackInventoryServer struct{}
 
-func (s *snackInventoryServer) CreateSnack(ctx context.Context, req *sipb.CreateSnackRequest) (*sipb.CreateSnackResposne, error) {
+func (s *snackInventoryServer) CreateSnack(ctx context.Context, req *sipb.CreateSnackRequest) (*sipb.CreateSnackResponse, error) {
 	return nil, nil
 }
 
@@ -28,6 +28,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	sipb.RegisterSnackInventoryService(grpcServer, &snackInventoryServer)
+	svc := sipb.NewSnackInventoryService(&snackInventoryServer{})
+	sipb.RegisterSnackInventoryService(grpcServer, svc)
 	grpcServer.Serve(lis)
 }
