@@ -17,7 +17,7 @@ var portFlag = flag.Int("port", 10000, "Port for SnackInventory to listen on.")
 type snackInventoryServer struct{}
 
 func (s *snackInventoryServer) CreateSnack(ctx context.Context, req *sipb.CreateSnackRequest) (*sipb.CreateSnackResponse, error) {
-	return nil, nil
+	return &sipb.CreateSnackResponse{}, nil
 }
 
 func main() {
@@ -27,6 +27,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	// TODO: Serve with TLS.
 	grpcServer := grpc.NewServer()
 	svc := sipb.NewSnackInventoryService(&snackInventoryServer{})
 	sipb.RegisterSnackInventoryService(grpcServer, svc)
