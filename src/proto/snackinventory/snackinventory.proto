@@ -1,0 +1,21 @@
+syntax = "proto3";
+package snackinventory;
+
+option go_package = "github.com/rmbarron/SnackInventory/src/proto/snackinventory";
+
+message Snack {
+  string barcode = 1;
+  string name = 2;
+  string brand = 3;
+}
+
+message CreateSnackRequest {
+  Snack snack = 1;
+}
+
+// Status / Success is communicated via gRPC response status.
+message CreateSnackResponse {}
+
+service SnackInventory {
+  rpc CreateSnack(CreateSnackRequest) returns (CreateSnackResponse) {}
+}
