@@ -31,3 +31,10 @@ Alternatively, the package should be installable via:
 *  `go install github.com/rmbarron/SnackInventory`
 
 but that flow has not been tested yet.
+
+### Recompiling Protos
+
+Any changes to messages / RPCs require recompiling the generated proto code.
+Currently, this requires cloning into a `github.com/$USER/SnackInventory/` dir.
+Then, from the root dir (containing `githug.com`), run:
+*  `protoc -I=github.com/$USER/SnackInventory/src/proto/snackinventory/ --go_out=./ --go-grpc_out=./ ./github.com/$USER/SnackInventory/src/proto/snackinventory/snackinventory.proto`

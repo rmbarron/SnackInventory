@@ -15,43 +15,51 @@ limitations under the License.
 */
 
 // Package cmd provides the various subcommands of the SnackInventory CLI.
-// This file implements a call to the `ListSnacks` RPC.
+// This file implements a call to the `DeleteSnack` RPC.
 package cmd
 
 import (
 	"context"
 	"fmt"
 
+	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-
-	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
 
-var listSnacksCmd = &cobra.Command{
-	Use:   "listsnacks",
-	Short: "List all snacks currently registered to SnackInventory.",
-	Long:  "List all snacks currently registered to SnackInventory.",
-	RunE:  listSnacks,
+var (
+	deleteSnackBarcode string
+
+	deleteSnackCmd = &cobra.Command{
+		Use:   "deletesnack [--flags]",
+		Short: "Delete a snack from SnackInventory.",
+		Long: `Delete a snack from SnackInventory.
+    --barcode is required to only delete the snack by its unique ID.`,
+		RunE: deleteSnack,
+	}
+)
+
+func init() {
+	deleteSnackCmd.Flags().StringVar(
+		&deleteSnackBarcode, "barcode", "", "barcode of snack to delete.")
+	deleteSnackCmd.MarkFlagRequired("barcode")
 }
 
-func listSnacks(_ *cobra.Command, _ []string) error {
+func deleteSnack(_ *cobra.Command, _ []string) error {
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(connTimeout))
 	if err != nil {
 		return fmt.Errorf("could not dial %s: %w", address, err)
 	}
 	defer conn.Close()
 
-	req := &sipb.ListSnacksRequest{}
 	client := sipb.NewSnackInventoryClient(conn)
+	req := &sipb.DeleteSnackRequest{
+		Barcode: deleteSnackBarcode,
+	}
 
-	res, err := client.ListSnacks(context.Background(), req)
-	if err != nil {
-		return fmt.Errorf("could not list snacks: %v", err)
+	if _, err = client.DeleteSnack(context.Background(), req); err != nil {
+		return fmt.Errorf("could not delete snack: %w", err)
 	}
-	fmt.Println("Found snacks:")
-	for _, snack := range res.GetSnacks() {
-		fmt.Println(snack)
-	}
+	fmt.Println("Successfully deleted snack!")
 	return nil
 }

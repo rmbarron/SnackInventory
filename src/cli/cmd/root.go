@@ -49,4 +49,6 @@ func init() {
 	rootCmd.MarkFlagRequired("address")
 
 	rootCmd.AddCommand(createSnackCmd)
+	rootCmd.AddCommand(listSnacksCmd)
+	rootCmd.AddCommand(deleteSnackCmd)
 }

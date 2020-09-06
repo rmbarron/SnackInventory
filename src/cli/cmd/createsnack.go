@@ -65,8 +65,7 @@ func createSnack(_ *cobra.Command, _ []string) error {
 		},
 	}
 
-	_, err = client.CreateSnack(context.Background(), req)
-	if err != nil {
+	if _, err = client.CreateSnack(context.Background(), req); err != nil {
 		return fmt.Errorf("could not create snack: %w", err)
 	}
 	fmt.Println("Successfully created snack!")

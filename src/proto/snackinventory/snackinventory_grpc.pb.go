@@ -34,6 +34,7 @@ const _ = grpc.SupportPackageIsVersion7
 type SnackInventoryClient interface {
 	CreateSnack(ctx context.Context, in *CreateSnackRequest, opts ...grpc.CallOption) (*CreateSnackResponse, error)
 	ListSnacks(ctx context.Context, in *ListSnacksRequest, opts ...grpc.CallOption) (*ListSnacksResponse, error)
+	DeleteSnack(ctx context.Context, in *DeleteSnackRequest, opts ...grpc.CallOption) (*DeleteSnackResponse, error)
 }
 
 type snackInventoryClient struct {
@@ -70,6 +71,19 @@ func (c *snackInventoryClient) ListSnacks(ctx context.Context, in *ListSnacksReq
 	return out, nil
 }
 
+var snackInventoryDeleteSnackStreamDesc = &grpc.StreamDesc{
+	StreamName: "DeleteSnack",
+}
+
+func (c *snackInventoryClient) DeleteSnack(ctx context.Context, in *DeleteSnackRequest, opts ...grpc.CallOption) (*DeleteSnackResponse, error) {
+	out := new(DeleteSnackResponse)
+	err := c.cc.Invoke(ctx, "/snackinventory.SnackInventory/DeleteSnack", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SnackInventoryService is the service API for SnackInventory service.
 // Fields should be assigned to their respective handler implementations only before
 // RegisterSnackInventoryService is called.  Any unassigned fields will result in the
@@ -77,6 +91,7 @@ func (c *snackInventoryClient) ListSnacks(ctx context.Context, in *ListSnacksReq
 type SnackInventoryService struct {
 	CreateSnack func(context.Context, *CreateSnackRequest) (*CreateSnackResponse, error)
 	ListSnacks  func(context.Context, *ListSnacksRequest) (*ListSnacksResponse, error)
+	DeleteSnack func(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
 }
 
 func (s *SnackInventoryService) createSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -113,6 +128,23 @@ func (s *SnackInventoryService) listSnacks(_ interface{}, ctx context.Context, d
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func (s *SnackInventoryService) deleteSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSnackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return s.DeleteSnack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     s,
+		FullMethod: "/snackinventory.SnackInventory/DeleteSnack",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return s.DeleteSnack(ctx, req.(*DeleteSnackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // RegisterSnackInventoryService registers a service implementation with a gRPC server.
 func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryService) {
@@ -127,6 +159,11 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			return nil, status.Errorf(codes.Unimplemented, "method ListSnacks not implemented")
 		}
 	}
+	if srvCopy.DeleteSnack == nil {
+		srvCopy.DeleteSnack = func(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error) {
+			return nil, status.Errorf(codes.Unimplemented, "method DeleteSnack not implemented")
+		}
+	}
 	sd := grpc.ServiceDesc{
 		ServiceName: "snackinventory.SnackInventory",
 		Methods: []grpc.MethodDesc{
@@ -137,6 +174,10 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			{
 				MethodName: "ListSnacks",
 				Handler:    srvCopy.listSnacks,
+			},
+			{
+				MethodName: "DeleteSnack",
+				Handler:    srvCopy.deleteSnack,
 			},
 		},
 		Streams:  []grpc.StreamDesc{},
@@ -164,6 +205,11 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 	}); ok {
 		ns.ListSnacks = h.ListSnacks
 	}
+	if h, ok := s.(interface {
+		DeleteSnack(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
+	}); ok {
+		ns.DeleteSnack = h.DeleteSnack
+	}
 	return ns
 }
 
@@ -174,4 +220,5 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 type UnstableSnackInventoryService interface {
 	CreateSnack(context.Context, *CreateSnackRequest) (*CreateSnackResponse, error)
 	ListSnacks(context.Context, *ListSnacksRequest) (*ListSnacksResponse, error)
+	DeleteSnack(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
 }
