@@ -9,6 +9,9 @@ Golang is already installed for the system.
 
 ## Linux / Ubuntu
 
+Install Cobra, which powers the CLI for interacting with the backend:
+*  `go get -u github.com/spf13/cobra/cobra`
+
 Install protoc genrules for Go & gRPC:
 *  `go get google.golang.org/protobuf/cmd/protoc-gen-go`
 *  `go install google.golang.org/protobuf/cmd/protoc-gen-go`

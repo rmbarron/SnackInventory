@@ -1,48 +1,21 @@
 // Package main provides a simple CLI for interacting with the SnackInventory
 // backend.
 //
-// This CLI is not currently in a usable state. It exists solely to test changes
-// made to the backend server, as the canonical gRPC CLI has no formal release.
+// This is a cobra-powered CLI. Each different RPC to SnackInventory is
+// represented in its own thick-client file within package cmd. Each file
+// defines a `func (cmd *cobra.Command, args []string) error` function that
+// does the actual work of connecting the backend and performing some action.
 package main
 
 import (
-	"context"
-	"flag"
-	"fmt"
 	"log"
 
-	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
-	"google.golang.org/grpc"
-)
-
-// Common flags across all subcommands.
-var (
-	addrFlag = flag.String("address", "localhost:10000",
-		"Address to contact SnackInventory backend. Typically a host:port address.")
+	"github.com/rmbarron/SnackInventory/src/cli/cmd"
 )
 
 func main() {
-	flag.Parse()
-	if *addrFlag == "" {
-		log.Fatal("--address must be supplied.")
-	}
-
-	conn, err := grpc.Dial(*addrFlag, grpc.WithInsecure())
+	err := cmd.Execute()
 	if err != nil {
-		log.Fatalf("Could not dial %s: %v", *addrFlag, err)
+		log.Fatalf("operation failed, encountered error: %v", err)
 	}
-	defer conn.Close()
-
-	client := sipb.NewSnackInventoryClient(conn)
-	req := &sipb.CreateSnackRequest{
-		Snack: &sipb.Snack{
-			Barcode: "barcode",
-		},
-	}
-
-	_, err = client.CreateSnack(context.Background(), req)
-	if err != nil {
-		log.Fatalf("Failed to create snack: %v", err)
-	}
-	fmt.Println("Successfully created snack!")
 }
