@@ -16,68 +16,45 @@ limitations under the License.
 package cmd
 
 import (
-	"net"
 	"testing"
 
 	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
+	"github.com/rmbarron/SnackInventory/src/cli/testutils"
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestDeleteSnack(t *testing.T) {
-	fsi := fakeserver.FakeSnackInventoryServer{
+	fsi := &fakeserver.FakeSnackInventoryServer{
 		DeleteSnackRes: &sipb.DeleteSnackResponse{},
 	}
-	// Use port 0 for the OS to choose an open port.
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("net.Listen(%q, %q) = got err %v, want nil", "tcp", ":0", err)
-	}
-	defer lis.Close()
-
-	// Serve using our fake server in a separate goroutine.
-	grpcServer := grpc.NewServer()
-	svc := sipb.NewSnackInventoryService(&fsi)
-	sipb.RegisterSnackInventoryService(grpcServer, svc)
-	go grpcServer.Serve(lis)
-	defer grpcServer.Stop()
+	addr, close := testutils.StartTestServer(t, fsi)
+	defer close()
 
 	// Inject the address of our fake server to the address flag variable.
 	tmpAddr := address
-	address = lis.Addr().String()
+	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err = deleteSnack(nil, nil); err != nil {
+	if err := deleteSnack(nil, nil); err != nil {
 		t.Fatalf("deleteSnack(nil, nil) = got err %v, want nil", err)
 	}
 }
 
 func TestDeleteSnack_ServerError(t *testing.T) {
-	fsi := fakeserver.FakeSnackInventoryServer{
+	fsi := &fakeserver.FakeSnackInventoryServer{
 		DeleteSnackErr: status.Error(codes.ResourceExhausted, "server overloaded"),
 	}
-	// Use port 0 for the OS to choose an open port.
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("net.Listen(%q, %q) = got err %v, want nil", "tcp", ":0", err)
-	}
-	defer lis.Close()
-
-	// Serve using our fake server in a separate goroutine.
-	grpcServer := grpc.NewServer()
-	svc := sipb.NewSnackInventoryService(&fsi)
-	sipb.RegisterSnackInventoryService(grpcServer, svc)
-	go grpcServer.Serve(lis)
-	defer grpcServer.Stop()
+	addr, close := testutils.StartTestServer(t, fsi)
+	defer close()
 
 	// Inject the address of our fake server to the address flag variable.
 	tmpAddr := address
-	address = lis.Addr().String()
+	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err = deleteSnack(nil, nil); err == nil {
+	if err := deleteSnack(nil, nil); err == nil {
 		t.Fatal("deleteSnack(nil, nil) = got err nil, want err")
 	}
 }

@@ -16,11 +16,10 @@ limitations under the License.
 package cmd
 
 import (
-	"net"
 	"testing"
 
 	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
-	"google.golang.org/grpc"
+	"github.com/rmbarron/SnackInventory/src/cli/testutils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -28,7 +27,7 @@ import (
 )
 
 func TestListSnacks(t *testing.T) {
-	fsi := fakeserver.FakeSnackInventoryServer{
+	fsi := &fakeserver.FakeSnackInventoryServer{
 		ListSnacksRes: &sipb.ListSnacksResponse{
 			Snacks: []*sipb.Snack{
 				&sipb.Snack{
@@ -39,54 +38,32 @@ func TestListSnacks(t *testing.T) {
 			},
 		},
 	}
-	// Use port 0 for the OS to choose an open port.
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("net.Listen(%q, %q) = got err %v, want nil", "tcp", ":0", err)
-	}
-	defer lis.Close()
-
-	// Serve using our fake server in a separate goroutine.
-	grpcServer := grpc.NewServer()
-	svc := sipb.NewSnackInventoryService(&fsi)
-	sipb.RegisterSnackInventoryService(grpcServer, svc)
-	go grpcServer.Serve(lis)
-	defer grpcServer.Stop()
+	addr, close := testutils.StartTestServer(t, fsi)
+	defer close()
 
 	// Inject the address of our fake server to the address flag variable.
 	tmpAddr := address
-	address = lis.Addr().String()
+	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err = listSnacks(nil, nil); err != nil {
+	if err := listSnacks(nil, nil); err != nil {
 		t.Fatalf("listSnacks(nil, nil) = got err %v, want nil", err)
 	}
 }
 
 func TestListSnacks_ServerError(t *testing.T) {
-	fsi := fakeserver.FakeSnackInventoryServer{
+	fsi := &fakeserver.FakeSnackInventoryServer{
 		ListSnacksErr: status.Error(codes.ResourceExhausted, "server overloaded"),
 	}
-	// Use port 0 for the OS to choose an open port.
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("net.Listen(%q, %q) = got err %v, want nil", "tcp", ":0", err)
-	}
-	defer lis.Close()
-
-	// Serve using our fake server in a separate goroutine.
-	grpcServer := grpc.NewServer()
-	svc := sipb.NewSnackInventoryService(&fsi)
-	sipb.RegisterSnackInventoryService(grpcServer, svc)
-	go grpcServer.Serve(lis)
-	defer grpcServer.Stop()
+	addr, close := testutils.StartTestServer(t, fsi)
+	defer close()
 
 	// Inject the address of our fake server to the address flag variable.
 	tmpAddr := address
-	address = lis.Addr().String()
+	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err = listSnacks(nil, nil); err == nil {
+	if err := listSnacks(nil, nil); err == nil {
 		t.Fatal("listSnacks(nil, nil) = got err nil, want err")
 	}
 }
