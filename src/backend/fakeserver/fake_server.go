@@ -24,11 +24,13 @@ import (
 
 // FakeSnackInventoryServer implements sipb.SnackInventoryService.
 type FakeSnackInventoryServer struct {
-	// CreateSnackRes is the response for a request.
+	// CreateSnackRes is the response for CreateSnack.
 	CreateSnackRes *sipb.CreateSnackResponse
 	// CreateSnackErr is the error returned on a call.
 	// For testing behavior based on error status, use `status.Error`.
 	CreateSnackErr error
+	ListSnacksRes  *sipb.ListSnacksResponse
+	ListSnacksErr  error
 }
 
 // CreateSnack creates a snack in SnackInventory.
@@ -37,4 +39,12 @@ func (f *FakeSnackInventoryServer) CreateSnack(_ context.Context, _ *sipb.Create
 		return &sipb.CreateSnackResponse{}, f.CreateSnackErr
 	}
 	return f.CreateSnackRes, nil
+}
+
+// ListSnacks lists all snacks in SnackInventory.
+func (f *FakeSnackInventoryServer) ListSnacks(_ context.Context, _ *sipb.ListSnacksRequest) (*sipb.ListSnacksResponse, error) {
+	if f.ListSnacksErr != nil {
+		return &sipb.ListSnacksResponse{}, f.ListSnacksErr
+	}
+	return f.ListSnacksRes, nil
 }
