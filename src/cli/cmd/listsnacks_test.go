@@ -26,9 +26,17 @@ import (
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
 
-func TestCreateSnack(t *testing.T) {
+func TestListSnacks(t *testing.T) {
 	fsi := &fakeserver.FakeSnackInventoryServer{
-		CreateSnackRes: &sipb.CreateSnackResponse{},
+		ListSnacksRes: &sipb.ListSnacksResponse{
+			Snacks: []*sipb.Snack{
+				&sipb.Snack{
+					Barcode: "barcode",
+					Name:    "peanut butter cup",
+					Brand:   "Reeses",
+				},
+			},
+		},
 	}
 	addr, close := testutils.StartTestServer(t, fsi)
 	defer close()
@@ -38,14 +46,14 @@ func TestCreateSnack(t *testing.T) {
 	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err := createSnack(nil, nil); err != nil {
-		t.Fatalf("createSnack(nil, nil) = got err %v, want nil", err)
+	if err := listSnacks(nil, nil); err != nil {
+		t.Fatalf("listSnacks(nil, nil) = got err %v, want nil", err)
 	}
 }
 
-func TestCreateSnack_ServerError(t *testing.T) {
+func TestListSnacks_ServerError(t *testing.T) {
 	fsi := &fakeserver.FakeSnackInventoryServer{
-		CreateSnackErr: status.Error(codes.AlreadyExists, "could not create snack"),
+		ListSnacksErr: status.Error(codes.ResourceExhausted, "server overloaded"),
 	}
 	addr, close := testutils.StartTestServer(t, fsi)
 	defer close()
@@ -55,7 +63,7 @@ func TestCreateSnack_ServerError(t *testing.T) {
 	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err := createSnack(nil, nil); err == nil {
-		t.Fatal("createSnack(nil, nil) = got err nil, want err")
+	if err := listSnacks(nil, nil); err == nil {
+		t.Fatal("listSnacks(nil, nil) = got err nil, want err")
 	}
 }

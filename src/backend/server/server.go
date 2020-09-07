@@ -35,6 +35,14 @@ func (s *snackInventoryServer) CreateSnack(ctx context.Context, req *sipb.Create
 	return &sipb.CreateSnackResponse{}, nil
 }
 
+func (s *snackInventoryServer) ListSnacks(ctx context.Context, req *sipb.ListSnacksRequest) (*sipb.ListSnacksResponse, error) {
+	return &sipb.ListSnacksResponse{}, nil
+}
+
+func (s *snackInventoryServer) DeleteSnack(ctx context.Context, req *sipb.DeleteSnackRequest) (*sipb.DeleteSnackResponse, error) {
+	return &sipb.DeleteSnackResponse{}, nil
+}
+
 func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *portFlag))

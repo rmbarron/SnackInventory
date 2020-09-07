@@ -20,15 +20,14 @@ import (
 
 	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
 	"github.com/rmbarron/SnackInventory/src/cli/testutils"
+	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
 
-func TestCreateSnack(t *testing.T) {
+func TestDeleteSnack(t *testing.T) {
 	fsi := &fakeserver.FakeSnackInventoryServer{
-		CreateSnackRes: &sipb.CreateSnackResponse{},
+		DeleteSnackRes: &sipb.DeleteSnackResponse{},
 	}
 	addr, close := testutils.StartTestServer(t, fsi)
 	defer close()
@@ -38,14 +37,14 @@ func TestCreateSnack(t *testing.T) {
 	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err := createSnack(nil, nil); err != nil {
-		t.Fatalf("createSnack(nil, nil) = got err %v, want nil", err)
+	if err := deleteSnack(nil, nil); err != nil {
+		t.Fatalf("deleteSnack(nil, nil) = got err %v, want nil", err)
 	}
 }
 
-func TestCreateSnack_ServerError(t *testing.T) {
+func TestDeleteSnack_ServerError(t *testing.T) {
 	fsi := &fakeserver.FakeSnackInventoryServer{
-		CreateSnackErr: status.Error(codes.AlreadyExists, "could not create snack"),
+		DeleteSnackErr: status.Error(codes.ResourceExhausted, "server overloaded"),
 	}
 	addr, close := testutils.StartTestServer(t, fsi)
 	defer close()
@@ -55,7 +54,7 @@ func TestCreateSnack_ServerError(t *testing.T) {
 	address = addr
 	defer func() { address = tmpAddr }()
 
-	if err := createSnack(nil, nil); err == nil {
-		t.Fatal("createSnack(nil, nil) = got err nil, want err")
+	if err := deleteSnack(nil, nil); err == nil {
+		t.Fatal("deleteSnack(nil, nil) = got err nil, want err")
 	}
 }

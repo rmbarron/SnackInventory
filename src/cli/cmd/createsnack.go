@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 // Package cmd provides the various subcommands of the SnackInventory CLI.
 // This file implements a call to the `CreateSnack` RPC.
 package cmd
@@ -64,8 +65,7 @@ func createSnack(_ *cobra.Command, _ []string) error {
 		},
 	}
 
-	_, err = client.CreateSnack(context.Background(), req)
-	if err != nil {
+	if _, err = client.CreateSnack(context.Background(), req); err != nil {
 		return fmt.Errorf("could not create snack: %w", err)
 	}
 	fmt.Println("Successfully created snack!")

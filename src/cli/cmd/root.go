@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 // Package cmd provides the various subcommands of the SnackInventory CLI.
 // This file implements the rootCmd for each other file to extend.
 package cmd
@@ -48,4 +49,6 @@ func init() {
 	rootCmd.MarkFlagRequired("address")
 
 	rootCmd.AddCommand(createSnackCmd)
+	rootCmd.AddCommand(listSnacksCmd)
+	rootCmd.AddCommand(deleteSnackCmd)
 }

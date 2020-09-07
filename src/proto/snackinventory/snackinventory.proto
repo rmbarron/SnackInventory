@@ -17,6 +17,11 @@ package snackinventory;
 
 option go_package = "github.com/rmbarron/SnackInventory/src/proto/snackinventory";
 
+// A snack is an individual item in our inventory.
+// We store a registry of potential snacks, and keep the count of each snack
+// currently in inventory.
+// Snacks use `barcode` as their unique ID, as multiple different snacks may
+// have the same name &/or brand.
 message Snack {
   string barcode = 1;
   string name = 2;
@@ -30,6 +35,23 @@ message CreateSnackRequest {
 // Status / Success is communicated via gRPC response status.
 message CreateSnackResponse {}
 
+message ListSnacksRequest {}
+
+message ListSnacksResponse {
+  repeated Snack snacks = 1;
+}
+
+// Snacks can only be deleted by barcode, the unique ID for snacks.
+message DeleteSnackRequest {
+  string barcode = 1;
+}
+
+message DeleteSnackResponse {}
+
 service SnackInventory {
   rpc CreateSnack(CreateSnackRequest) returns (CreateSnackResponse) {}
+
+  rpc ListSnacks(ListSnacksRequest) returns (ListSnacksResponse) {}
+
+  rpc DeleteSnack(DeleteSnackRequest) returns (DeleteSnackResponse) {}
 }
