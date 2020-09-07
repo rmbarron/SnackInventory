@@ -33,7 +33,6 @@ func TestListSnacks(t *testing.T) {
 				&sipb.Snack{
 					Barcode: "barcode",
 					Name:    "peanut butter cup",
-					Brand:   "Reeses",
 				},
 			},
 		},

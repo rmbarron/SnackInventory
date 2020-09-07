@@ -15,6 +15,24 @@ project consists of several pieces:
 On initial scan, barcodes need their metadata (name & brand) filled in manually.
 This is cumbersome, but seamless on repeat orders of the same product.
 
+# Server Usage
+
+The backend server acts as an interface between the user (CLI & UI) & storage.
+On launch, flags specific to the used storage interface must be given. Passwords
+are read from stdin to avoid having '--password' in shell history.
+
+Ex: `go run src/backend/server/server.go --sql_user=$USER --sql_address=127.0.0.1:3306 < ~/sql_pass.txt`
+
+# Storage Model
+
+The primary backend for the SnackInventory server is SQL. When a SQL
+implementation is used, an arbitrary database name can be given. Inside that
+database, tables "SnackRegistry" and "Locations" are assumed present.
+
+## Schema
+
+SnackRegistry: barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255)
+
 # Setup
 
 SnackInventory is a Golang gRPC service. Setup requirements are mostly that
