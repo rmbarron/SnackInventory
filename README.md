@@ -1,6 +1,20 @@
 SnackInventory is a lightweight inventory system used to track current snack
 counts in your home.
 
+# Overview
+
+The idea is to keep track of snacks as they enter and exit your cupboard. This
+project consists of several pieces:
+*  Backend gRPC service that acts as an interface above storage.
+*  CLI for interacting with the backend easily.
+*  A web UI for browsing the current state of the backend, and updating values as appropriate.
+*  A raspberry Pi daemon, that listens to a barcode scanner and increments inventory count.
+
+![SnackInventory architecture](https://docs.google.com/drawings/d/e/2PACX-1vSPKeEJsa81ATaFLAuXv7vw80L45y5H_UN7CoHQZ9jUj7CrBWFbGfwEz3F5Z2QnPFeh6z-bjebO-JAL/pub?w=960&h=312)
+
+On initial scan, barcodes need their metadata (name & brand) filled in manually.
+This is cumbersome, but seamless on repeat orders of the same product.
+
 # Setup
 
 SnackInventory is a Golang gRPC service. Setup requirements are mostly that
