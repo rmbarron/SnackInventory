@@ -64,6 +64,28 @@ Alternatively, the package should be installable via:
 
 but that flow has not been tested yet.
 
+
+### MariaDB
+
+SnackInventory primarily uses MariaDB as its backing DB. To set up a serving
+instance:
+
+*  `sudo apt install mariadb-server`
+*  `sudo mysql_secure_installation` - Locks down core vulnerabilities (like root
+   user permissions)
+*  `sudo mysql` - enter interactive DB shell for setup
+  *  `CREATE DATABASE SnackInventory;`
+  *  `USE SnackInventory;`
+  *  `CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255));`
+  *  `GRANT ALL PRIVILEGES ON SnackInventory.* TO '$USER'@'$NETWORK' IDENTIFIED BY '$PASSWORD' WITH GRANT OPTION;`
+  *  `FLUSH PRIVILEGES;`
+
+To allow remote connections (rather than just localhost connections):
+
+*  Comment out `bind-address = 127.0.0.1` in `/etc/mysql/mariadb.conf.d/50-server.cnf`
+*  Restart the mariadb service: `sudo systemctl restart mariadb.service`
+
+
 ### Recompiling Protos
 
 Any changes to messages / RPCs require recompiling the generated proto code.
