@@ -22,7 +22,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
+	"github.com/rmbarron/SnackInventory/src/backend/fakes/fakeserver"
 	"google.golang.org/grpc"
 
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
