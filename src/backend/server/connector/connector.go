@@ -22,9 +22,6 @@ limitations under the License.
 // very simple.
 package connector
 
-// TODO: Test this package by spinning up an in-memory DB or full DB process
-// in tests. Sadly, the *sql.DB type is difficult to fake for testing.
-
 import (
 	"context"
 	"database/sql"

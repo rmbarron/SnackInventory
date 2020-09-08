@@ -8,6 +8,8 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0
+	github.com/lestrrat-go/tcputil v0.0.0-20180223003554-d3c7f98154fb // indirect
+	github.com/lestrrat-go/test-mysqld v0.0.0-20190527004737-6c91be710371
 	github.com/securego/gosec v0.0.0-20200401082031-e946c8c39989 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/stripe/safesql v0.2.0 // indirect
