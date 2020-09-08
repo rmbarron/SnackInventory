@@ -15,14 +15,14 @@ limitations under the License.
 */
 
 // Package testutils provides helper functions around common test
-// setup tasks.
+// setup tasks for src/cli and src/cli/cmd.
 package testutils
 
 import (
 	"net"
 	"testing"
 
-	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
+	"github.com/rmbarron/SnackInventory/src/backend/fakes/fakeserver"
 	"google.golang.org/grpc"
 
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"

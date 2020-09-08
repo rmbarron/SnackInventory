@@ -31,7 +31,6 @@ import (
 var (
 	createSnackBarcode string
 	createSnackName    string
-	createSnackBrand   string
 
 	createSnackCmd = &cobra.Command{
 		Use:   "createsnack [--flags]",
@@ -45,7 +44,6 @@ var (
 func init() {
 	createSnackCmd.Flags().StringVar(&createSnackBarcode, "barcode", "", "Barcode of the snack to create.")
 	createSnackCmd.Flags().StringVar(&createSnackName, "name", "", "Name of the snack to create.")
-	createSnackCmd.Flags().StringVar(&createSnackBrand, "brand", "", "Brand of the snack to create.")
 	createSnackCmd.MarkFlagRequired("barcode")
 }
 
@@ -61,7 +59,6 @@ func createSnack(_ *cobra.Command, _ []string) error {
 		Snack: &sipb.Snack{
 			Barcode: createSnackBarcode,
 			Name:    createSnackName,
-			Brand:   createSnackBrand,
 		},
 	}
 

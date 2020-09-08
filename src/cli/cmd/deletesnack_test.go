@@ -18,7 +18,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
+	"github.com/rmbarron/SnackInventory/src/backend/fakes/fakeserver"
 	"github.com/rmbarron/SnackInventory/src/cli/testutils"
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 	"google.golang.org/grpc/codes"

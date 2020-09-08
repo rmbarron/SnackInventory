@@ -18,7 +18,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/rmbarron/SnackInventory/src/backend/fakeserver"
+	"github.com/rmbarron/SnackInventory/src/backend/fakes/fakeserver"
 	"github.com/rmbarron/SnackInventory/src/cli/testutils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,7 +33,6 @@ func TestListSnacks(t *testing.T) {
 				&sipb.Snack{
 					Barcode: "barcode",
 					Name:    "peanut butter cup",
-					Brand:   "Reeses",
 				},
 			},
 		},
