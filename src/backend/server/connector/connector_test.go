@@ -17,48 +17,85 @@ package connector
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	mysqltest "github.com/lestrrat-go/test-mysqld"
+	"github.com/rmbarron/SnackInventory/src/backend/server/testutils"
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
+
+func TestCreateSnack(t *testing.T) {
+	ctx := context.Background()
+
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
+
+	testutils.CreateDatabaseAndTablesT(ctx, t, db)
+
+	si := &SQLImpl{db: db}
+	if err := si.CreateSnack(ctx, "1", "testsnack"); err != nil {
+		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err %v, want err nil", "1", "testsnack", err)
+	}
+
+	want := []*sipb.Snack{
+		{
+			Barcode: "1",
+			Name:    "testsnack",
+		},
+	}
+	got, err := si.ListSnacks(ctx)
+	if err != nil {
+		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+	}
+	if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
+		t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
+	}
+}
+
+func TestCreateSnack_SelectError(t *testing.T) {
+	ctx := context.Background()
+
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
+
+	// Create database, but without any tables.
+	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
+	}
+	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
+	}
+
+	si := &SQLImpl{db: db}
+	if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
+		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+	}
+}
+
+func TestCreateSnack_AlreadyExists(t *testing.T) {
+	ctx := context.Background()
+
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
+
+	testutils.CreateDatabaseAndTablesT(ctx, t, db)
+	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "1", Name: "testsnack"})
+
+	si := &SQLImpl{db: db}
+	if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
+		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+	}
+}
 
 func TestListSnacks(t *testing.T) {
 	ctx := context.Background()
 
-	mysqld, err := mysqltest.NewMysqld(nil)
-	if err != nil {
-		t.Fatalf("mysqltest.NewMysqld(nil) = got err %v, want err nil", err)
-	}
-	defer mysqld.Stop()
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
 
-	db, err := sql.Open("mysql", mysqld.DSN())
-	if err != nil {
-		t.Fatalf("sql.Open(%q, %q) = got err %v, want err nil", "mysql", mysqld.DSN(), err)
-	}
-
-	if err = db.PingContext(ctx); err != nil {
-		t.Fatalf("db.PingContext(ctx) = got err %v, want err nil", err)
-	}
-
-	// Fill in initial data in the tmp instance.
-	if _, err = db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
-	}
-	if _, err = db.ExecContext(ctx, "USE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
-	}
-	if _, err = db.ExecContext(ctx, "CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255))"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
-			"CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255))", err)
-	}
-	if _, err = db.ExecContext(ctx, "INSERT INTO SnackRegistry (barcode, name) VALUES('123', 'testsnack')"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
-			"INSERT INTO SnackRegistry (barcode, name) VALUES(123, testsnack)", err)
-	}
+	testutils.CreateDatabaseAndTablesT(ctx, t, db)
+	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
 
 	si := &SQLImpl{db: db}
 	got, err := si.ListSnacks(ctx)
@@ -83,31 +120,19 @@ func TestListSnacks(t *testing.T) {
 func TestListSnacks_SelectError(t *testing.T) {
 	ctx := context.Background()
 
-	mysqld, err := mysqltest.NewMysqld(nil)
-	if err != nil {
-		t.Fatalf("mysqltest.NewMysqld(nil) = got err %v, want err nil", err)
-	}
-	defer mysqld.Stop()
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
 
-	db, err := sql.Open("mysql", mysqld.DSN())
-	if err != nil {
-		t.Fatalf("sql.Open(%q, %q) = got err %v, want err nil", "mysql", mysqld.DSN(), err)
-	}
-
-	if err = db.PingContext(ctx); err != nil {
-		t.Fatalf("db.PingContext(ctx) = got err %v, want err nil", err)
-	}
-
-	// Fill in initial data in the tmp instance.
-	if _, err = db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
+	// Create database, but without any tables.
+	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
 	}
-	if _, err = db.ExecContext(ctx, "USE SnackInventory"); err != nil {
+	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
 	}
 
 	si := &SQLImpl{db: db}
-	if _, err = si.ListSnacks(ctx); err == nil {
+	if _, err := si.ListSnacks(ctx); err == nil {
 		t.Fatal("si.ListSnacks(ctx) = got err nil, want err")
 	}
 }

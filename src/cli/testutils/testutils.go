@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Package testutils provides helper functions around common test
-// setup tasks.
+// setup tasks for src/cli and src/cli/cmd.
 package testutils
 
 import (

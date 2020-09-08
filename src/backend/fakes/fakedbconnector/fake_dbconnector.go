@@ -24,8 +24,13 @@ import (
 )
 
 type FakeDBConnector struct {
-	ListSnacksRes []*sipb.Snack
-	ListSnacksErr error
+	CreateSnackErr error
+	ListSnacksRes  []*sipb.Snack
+	ListSnacksErr  error
+}
+
+func (f *FakeDBConnector) CreateSnack(_ context.Context, _, _ string) error {
+	return f.CreateSnackErr
 }
 
 func (f *FakeDBConnector) ListSnacks(_ context.Context) ([]*sipb.Snack, error) {

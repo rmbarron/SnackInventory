@@ -50,6 +50,7 @@ var (
 
 // Interface for connecting to backing storage.
 type dbConnector interface {
+	CreateSnack(ctx context.Context, barcode, name string) error
 	ListSnacks(ctx context.Context) ([]*sipb.Snack, error)
 }
 
@@ -58,6 +59,12 @@ type snackInventoryServer struct {
 }
 
 func (s *snackInventoryServer) CreateSnack(ctx context.Context, req *sipb.CreateSnackRequest) (*sipb.CreateSnackResponse, error) {
+	if err := s.c.CreateSnack(ctx, req.GetSnack().GetBarcode(), req.GetSnack().GetName()); err != nil {
+		if c := status.Code(err); c == codes.AlreadyExists {
+			return nil, err
+		}
+		return nil, status.Errorf(codes.Internal, "could not create snack: %v", err)
+	}
 	return &sipb.CreateSnackResponse{}, nil
 }
 

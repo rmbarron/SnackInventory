@@ -29,6 +29,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // MySQL driver.
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // SQLImpl implements a connector a SQL DB.
@@ -49,6 +51,24 @@ func NewSQLImpl(ctx context.Context, user, password, hostport, dbname string) (*
 		return nil, err
 	}
 	return &SQLImpl{db: db}, nil
+}
+
+// CreateSnack creates a snack in the sql database.
+// Returns an AlreadyExists error if it does.
+func (s *SQLImpl) CreateSnack(ctx context.Context, barcode, name string) error {
+	rows, err := s.db.QueryContext(ctx, "SELECT * FROM SnackRegistry WHERE barcode IN (?)", barcode)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	// Check if the value already exists by whether there are results in the Rows.
+	if rows.Next() {
+		return status.Errorf(codes.AlreadyExists, "barcode %q already has an entry", barcode)
+	}
+	if _, err := s.db.ExecContext(ctx, "INSERT INTO SnackRegistry (barcode, name) VALUES(?, ?)", barcode, name); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ListSnacks reads all snacks currently registered to SnackInventory.

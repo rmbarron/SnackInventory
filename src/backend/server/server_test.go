@@ -27,6 +27,49 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func TestCreateSnack(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{}
+
+	req := &sipb.CreateSnackRequest{
+		Snack: &sipb.Snack{Barcode: "1"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateSnack(context.Background(), req); err != nil {
+		t.Fatalf("si.CreateSnack(ctx, %v) = got err %v, want err nil", req, err)
+	}
+}
+
+func TestCreateSnack_AlreadyExists(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateSnackErr: status.Error(codes.AlreadyExists, "already exists"),
+	}
+
+	req := &sipb.CreateSnackRequest{
+		Snack: &sipb.Snack{Barcode: "1"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateSnack(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
+	}
+}
+
+func TestCreateSnack_Internal(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateSnackErr: status.Error(codes.Internal, "internally failed"),
+	}
+
+	req := &sipb.CreateSnackRequest{
+		Snack: &sipb.Snack{Barcode: "1"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateSnack(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
+	}
+}
+
 func TestListSnacks(t *testing.T) {
 	snack := &sipb.Snack{
 		Barcode: "123",
