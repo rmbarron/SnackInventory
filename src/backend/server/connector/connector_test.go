@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Tests for this package spin up a local instance of mysqld and tear them down
+// before and after each test. Tests here are expected to be slow.
 package connector
 
 import (
@@ -134,5 +137,28 @@ func TestListSnacks_SelectError(t *testing.T) {
 	si := &SQLImpl{db: db}
 	if _, err := si.ListSnacks(ctx); err == nil {
 		t.Fatal("si.ListSnacks(ctx) = got err nil, want err")
+	}
+}
+
+func TestDeleteSnack(t *testing.T) {
+	ctx := context.Background()
+
+	db, close := testutils.StartMysqldT(ctx, t)
+	defer close()
+
+	testutils.CreateDatabaseAndTablesT(ctx, t, db)
+	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
+
+	si := &SQLImpl{db: db}
+	if err := si.DeleteSnack(ctx, "123"); err != nil {
+		t.Fatalf("si.DeleteSnack(ctx, %q) = got err %v, want err nil", "123", err)
+	}
+
+	got, err := si.ListSnacks(ctx)
+	if err != nil {
+		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("si.ListSnacks(ctx) = got %v, want []*sipb.Snack{}", got)
 	}
 }

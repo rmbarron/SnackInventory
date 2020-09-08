@@ -93,3 +93,11 @@ func (s *SQLImpl) ListSnacks(ctx context.Context) ([]*sipb.Snack, error) {
 	}
 	return retVal, nil
 }
+
+// DeleteSnack deletes a single snack from SnackInventory.
+func (s *SQLImpl) DeleteSnack(ctx context.Context, barcode string) error {
+	if _, err := s.db.ExecContext(ctx, "DELETE FROM SnackRegistry WHERE barcode IN (?)", barcode); err != nil {
+		return err
+	}
+	return nil
+}
