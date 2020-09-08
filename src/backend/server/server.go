@@ -52,6 +52,7 @@ var (
 type dbConnector interface {
 	CreateSnack(ctx context.Context, barcode, name string) error
 	ListSnacks(ctx context.Context) ([]*sipb.Snack, error)
+	DeleteSnack(ctx context.Context, barcode string) error
 }
 
 type snackInventoryServer struct {
@@ -80,6 +81,9 @@ func (s *snackInventoryServer) ListSnacks(ctx context.Context, req *sipb.ListSna
 }
 
 func (s *snackInventoryServer) DeleteSnack(ctx context.Context, req *sipb.DeleteSnackRequest) (*sipb.DeleteSnackResponse, error) {
+	if err := s.c.DeleteSnack(ctx, req.GetBarcode()); err != nil {
+		return nil, status.Errorf(codes.Internal, "could not delete snack: %v", err)
+	}
 	return &sipb.DeleteSnackResponse{}, nil
 }
 
