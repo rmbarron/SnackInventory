@@ -27,6 +27,7 @@ type FakeDBConnector struct {
 	CreateSnackErr error
 	ListSnacksRes  []*sipb.Snack
 	ListSnacksErr  error
+	UpdateSnackErr error
 	DeleteSnackErr error
 }
 
@@ -39,6 +40,10 @@ func (f *FakeDBConnector) ListSnacks(_ context.Context) ([]*sipb.Snack, error) {
 		return nil, f.ListSnacksErr
 	}
 	return f.ListSnacksRes, nil
+}
+
+func (f *FakeDBConnector) UpdateSnack(_ context.Context, _, _ string) error {
+	return f.UpdateSnackErr
 }
 
 func (f *FakeDBConnector) DeleteSnack(_ context.Context, _ string) error {

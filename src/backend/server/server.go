@@ -52,6 +52,7 @@ var (
 type dbConnector interface {
 	CreateSnack(ctx context.Context, barcode, name string) error
 	ListSnacks(ctx context.Context) ([]*sipb.Snack, error)
+	UpdateSnack(ctx context.Context, barcode, name string) error
 	DeleteSnack(ctx context.Context, barcode string) error
 }
 
@@ -81,6 +82,9 @@ func (s *snackInventoryServer) ListSnacks(ctx context.Context, req *sipb.ListSna
 }
 
 func (s *snackInventoryServer) UpdateSnack(ctx context.Context, req *sipb.UpdateSnackRequest) (*sipb.UpdateSnackResponse, error) {
+	if err := s.c.UpdateSnack(ctx, req.GetSnack().GetBarcode(), req.GetSnack().GetName()); err != nil {
+		return nil, status.Errorf(codes.Internal, "could not update snack: %v", err)
+	}
 	return &sipb.UpdateSnackResponse{}, nil
 }
 

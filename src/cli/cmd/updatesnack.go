@@ -39,6 +39,7 @@ var (
     overriding fields with empty values, read the snack you intend to
     update first.
     --barcode is required to find the snack to be updated.`,
+		RunE: updateSnack,
 	}
 )
 

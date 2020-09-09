@@ -50,5 +50,6 @@ func init() {
 
 	rootCmd.AddCommand(createSnackCmd)
 	rootCmd.AddCommand(listSnacksCmd)
+	rootCmd.AddCommand(updateSnackCmd)
 	rootCmd.AddCommand(deleteSnackCmd)
 }

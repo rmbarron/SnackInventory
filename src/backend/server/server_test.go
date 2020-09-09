@@ -107,6 +107,38 @@ func TestListSnacks_StorageError(t *testing.T) {
 	}
 }
 
+func TestUpdateSnack(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{}
+
+	si := snackInventoryServer{c: fdbc}
+	req := &sipb.UpdateSnackRequest{
+		Snack: &sipb.Snack{
+			Barcode: "123",
+			Name:    "testsnack",
+		},
+	}
+	if _, err := si.UpdateSnack(context.Background(), req); err != nil {
+		t.Fatalf("si.UpdateSnack(ctx, %v) = got err %v, want err nil", req, err)
+	}
+}
+
+func TestUpdateSnack_Error(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		UpdateSnackErr: status.Error(codes.Internal, "something failed"),
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	req := &sipb.UpdateSnackRequest{
+		Snack: &sipb.Snack{
+			Barcode: "123",
+			Name:    "testsnack",
+		},
+	}
+	if _, err := si.UpdateSnack(context.Background(), req); err == nil {
+		t.Fatalf("si.UpdateSnack(ctx, %v) = got err nil, want err", req)
+	}
+}
+
 func TestDeleteSnack(t *testing.T) {
 	fdbc := &fakedbconnector.FakeDBConnector{}
 

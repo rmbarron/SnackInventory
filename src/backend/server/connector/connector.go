@@ -94,6 +94,15 @@ func (s *SQLImpl) ListSnacks(ctx context.Context) ([]*sipb.Snack, error) {
 	return retVal, nil
 }
 
+// UpdateSnack updates a single snack in place in SnackInventory.
+func (s *SQLImpl) UpdateSnack(ctx context.Context, barcode, name string) error {
+	if _, err := s.db.ExecContext(ctx, "UPDATE SnackRegistry SET name = ? WHERE barcode IN (?)",
+		name, barcode); err != nil {
+		return err
+	}
+	return nil
+}
+
 // DeleteSnack deletes a single snack from SnackInventory.
 func (s *SQLImpl) DeleteSnack(ctx context.Context, barcode string) error {
 	if _, err := s.db.ExecContext(ctx, "DELETE FROM SnackRegistry WHERE barcode IN (?)", barcode); err != nil {
