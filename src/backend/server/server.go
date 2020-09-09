@@ -80,6 +80,10 @@ func (s *snackInventoryServer) ListSnacks(ctx context.Context, req *sipb.ListSna
 	}, nil
 }
 
+func (s *snackInventoryServer) UpdateSnack(ctx context.Context, req *sipb.UpdateSnackRequest) (*sipb.UpdateSnackResponse, error) {
+	return &sipb.UpdateSnackResponse{}, nil
+}
+
 func (s *snackInventoryServer) DeleteSnack(ctx context.Context, req *sipb.DeleteSnackRequest) (*sipb.DeleteSnackResponse, error) {
 	if err := s.c.DeleteSnack(ctx, req.GetBarcode()); err != nil {
 		return nil, status.Errorf(codes.Internal, "could not delete snack: %v", err)

@@ -17,6 +17,11 @@ package snackinventory;
 
 option go_package = "github.com/rmbarron/SnackInventory/src/proto/snackinventory";
 
+// Many protos in this package have no fields, so they look kind of silly. We
+// do this to maintain a consistent interface for future extensibility. It is
+// much easier to add new fields to existing protos than it is to change the
+// API surface for existing clients.
+
 // A snack is an individual item in our inventory.
 // We store a registry of potential snacks, and keep the count of each snack
 // currently in inventory.
@@ -40,6 +45,16 @@ message ListSnacksResponse {
   repeated Snack snacks = 1;
 }
 
+// Updates snack meta-values based on barcode.
+// If no snack with given barcode is present, op fails with "NotFoundError".
+// All values are written as given - to avoid overriding unintended fields with
+// empty values, read the snack to update first.
+message UpdateSnackRequest {
+  Snack snack = 1;
+}
+
+message UpdateSnackResponse{}
+
 // Snacks can only be deleted by barcode, the unique ID for snacks.
 message DeleteSnackRequest {
   string barcode = 1;
@@ -51,6 +66,8 @@ service SnackInventory {
   rpc CreateSnack(CreateSnackRequest) returns (CreateSnackResponse) {}
 
   rpc ListSnacks(ListSnacksRequest) returns (ListSnacksResponse) {}
+
+  rpc updateSnack(UpdateSnackRequest) returns (UpdateSnackResponse) {}
 
   rpc DeleteSnack(DeleteSnackRequest) returns (DeleteSnackResponse) {}
 }

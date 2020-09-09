@@ -32,6 +32,8 @@ type FakeSnackInventoryServer struct {
 	CreateSnackErr error
 	ListSnacksRes  *sipb.ListSnacksResponse
 	ListSnacksErr  error
+	UpdateSnackRes *sipb.UpdateSnackResponse
+	UpdateSnackErr error
 	DeleteSnackRes *sipb.DeleteSnackResponse
 	DeleteSnackErr error
 }
@@ -50,6 +52,14 @@ func (f *FakeSnackInventoryServer) ListSnacks(_ context.Context, _ *sipb.ListSna
 		return &sipb.ListSnacksResponse{}, f.ListSnacksErr
 	}
 	return f.ListSnacksRes, nil
+}
+
+// UpdateSnack updates meta-values of a snack in SnackInventory.
+func (f *FakeSnackInventoryServer) UpdateSnack(_ context.Context, _ *sipb.UpdateSnackRequest) (*sipb.UpdateSnackResponse, error) {
+	if f.UpdateSnackErr != nil {
+		return &sipb.UpdateSnackResponse{}, f.UpdateSnackErr
+	}
+	return f.UpdateSnackRes, nil
 }
 
 // DeleteSnack deletes a snack from SnackInventory.
