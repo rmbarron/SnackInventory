@@ -68,6 +68,10 @@ func CreateDatabaseAndTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
 			"CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255))", err)
 	}
+	if _, err := db.ExecContext(ctx, "CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY)"); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
+			"CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY)", err)
+	}
 }
 
 // AddSnackT adds a given Snack to DB's SnackRegistry table.

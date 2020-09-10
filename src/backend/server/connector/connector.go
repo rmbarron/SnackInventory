@@ -110,3 +110,21 @@ func (s *SQLImpl) DeleteSnack(ctx context.Context, barcode string) error {
 	}
 	return nil
 }
+
+// CreateLocation adds a new location to SnackInventory.
+// Returns an AlreadyExists error if it does.
+func (s *SQLImpl) CreateLocation(ctx context.Context, name string) error {
+	rows, err := s.db.QueryContext(ctx, "SELECT * FROM LocationRegistry WHERE name IN (?)", name)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	// Check if the value already exists by whether there are results in the Rows.
+	if rows.Next() {
+		return status.Errorf(codes.AlreadyExists, "name %q already has an entry", name)
+	}
+	if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationRegistry (name) VALUES(?)", name); err != nil {
+		return err
+	}
+	return nil
+}

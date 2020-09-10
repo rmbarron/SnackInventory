@@ -160,3 +160,46 @@ func TestDeleteSnack_Error(t *testing.T) {
 		t.Fatalf("si.DeleteSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
+
+func TestCreateLocation(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err != nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err %v, want err nil", req, err)
+	}
+}
+
+func TestCreateLocation_AlreadyExists(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateLocationErr: status.Error(codes.AlreadyExists, "already exists"),
+	}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+	}
+}
+
+func TestCreateLocation_Internal(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateLocationErr: status.Error(codes.Internal, "internally failed"),
+	}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+	}
+}

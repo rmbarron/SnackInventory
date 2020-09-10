@@ -33,6 +33,8 @@ database, tables "SnackRegistry" and "Locations" are assumed present.
 
 SnackRegistry: barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255)
 
+LocationRegistry: name VARCHAR(30)
+
 # Setup
 
 SnackInventory is a Golang gRPC service. Setup requirements are mostly that
@@ -77,6 +79,7 @@ instance:
   *  `CREATE DATABASE SnackInventory;`
   *  `USE SnackInventory;`
   *  `CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255));`
+  *  `CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY);`
   *  `GRANT ALL PRIVILEGES ON SnackInventory.* TO '$USER'@'$NETWORK' IDENTIFIED BY '$PASSWORD' WITH GRANT OPTION;`
   *  `FLUSH PRIVILEGES;`
 

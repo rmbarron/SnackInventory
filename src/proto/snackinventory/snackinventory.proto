@@ -22,6 +22,8 @@ option go_package = "github.com/rmbarron/SnackInventory/src/proto/snackinventory
 // much easier to add new fields to existing protos than it is to change the
 // API surface for existing clients.
 
+// ======= Snack Registry Operations ==================
+
 // A snack is an individual item in our inventory.
 // We store a registry of potential snacks, and keep the count of each snack
 // currently in inventory.
@@ -62,7 +64,23 @@ message DeleteSnackRequest {
 
 message DeleteSnackResponse {}
 
+
+// ======= Location Registry Operations ==================
+
+message Location {
+  string name = 1;
+}
+
+message CreateLocationRequest {
+  Location location = 1;
+}
+
+message CreateLocationResponse {}
+
 service SnackInventory {
+
+  // ======= Snack Registry Operations ==================
+
   rpc CreateSnack(CreateSnackRequest) returns (CreateSnackResponse) {}
 
   rpc ListSnacks(ListSnacksRequest) returns (ListSnacksResponse) {}
@@ -70,4 +88,8 @@ service SnackInventory {
   rpc updateSnack(UpdateSnackRequest) returns (UpdateSnackResponse) {}
 
   rpc DeleteSnack(DeleteSnackRequest) returns (DeleteSnackResponse) {}
+
+  // ======= Location Registry Operations ==================
+
+  rpc CreateLocation(CreateLocationRequest) returns (CreateLocationResponse) {}
 }

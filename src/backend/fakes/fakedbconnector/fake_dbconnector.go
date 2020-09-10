@@ -29,6 +29,8 @@ type FakeDBConnector struct {
 	ListSnacksErr  error
 	UpdateSnackErr error
 	DeleteSnackErr error
+
+	CreateLocationErr error
 }
 
 func (f *FakeDBConnector) CreateSnack(_ context.Context, _, _ string) error {
@@ -48,4 +50,8 @@ func (f *FakeDBConnector) UpdateSnack(_ context.Context, _, _ string) error {
 
 func (f *FakeDBConnector) DeleteSnack(_ context.Context, _ string) error {
 	return f.DeleteSnackErr
+}
+
+func (f *FakeDBConnector) CreateLocation(_ context.Context, _ string) error {
+	return f.CreateLocationErr
 }
