@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 type SnackInventoryClient interface {
 	CreateSnack(ctx context.Context, in *CreateSnackRequest, opts ...grpc.CallOption) (*CreateSnackResponse, error)
 	ListSnacks(ctx context.Context, in *ListSnacksRequest, opts ...grpc.CallOption) (*ListSnacksResponse, error)
+	UpdateSnack(ctx context.Context, in *UpdateSnackRequest, opts ...grpc.CallOption) (*UpdateSnackResponse, error)
 	DeleteSnack(ctx context.Context, in *DeleteSnackRequest, opts ...grpc.CallOption) (*DeleteSnackResponse, error)
 }
 
@@ -56,6 +57,19 @@ func (c *snackInventoryClient) ListSnacks(ctx context.Context, in *ListSnacksReq
 	return out, nil
 }
 
+var snackInventoryUpdateSnackStreamDesc = &grpc.StreamDesc{
+	StreamName: "updateSnack",
+}
+
+func (c *snackInventoryClient) UpdateSnack(ctx context.Context, in *UpdateSnackRequest, opts ...grpc.CallOption) (*UpdateSnackResponse, error) {
+	out := new(UpdateSnackResponse)
+	err := c.cc.Invoke(ctx, "/snackinventory.SnackInventory/updateSnack", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var snackInventoryDeleteSnackStreamDesc = &grpc.StreamDesc{
 	StreamName: "DeleteSnack",
 }
@@ -76,6 +90,7 @@ func (c *snackInventoryClient) DeleteSnack(ctx context.Context, in *DeleteSnackR
 type SnackInventoryService struct {
 	CreateSnack func(context.Context, *CreateSnackRequest) (*CreateSnackResponse, error)
 	ListSnacks  func(context.Context, *ListSnacksRequest) (*ListSnacksResponse, error)
+	UpdateSnack func(context.Context, *UpdateSnackRequest) (*UpdateSnackResponse, error)
 	DeleteSnack func(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
 }
 
@@ -113,6 +128,23 @@ func (s *SnackInventoryService) listSnacks(_ interface{}, ctx context.Context, d
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func (s *SnackInventoryService) updateSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSnackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return s.UpdateSnack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     s,
+		FullMethod: "/snackinventory.SnackInventory/UpdateSnack",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return s.UpdateSnack(ctx, req.(*UpdateSnackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 func (s *SnackInventoryService) deleteSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteSnackRequest)
 	if err := dec(in); err != nil {
@@ -144,6 +176,11 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			return nil, status.Errorf(codes.Unimplemented, "method ListSnacks not implemented")
 		}
 	}
+	if srvCopy.UpdateSnack == nil {
+		srvCopy.UpdateSnack = func(context.Context, *UpdateSnackRequest) (*UpdateSnackResponse, error) {
+			return nil, status.Errorf(codes.Unimplemented, "method UpdateSnack not implemented")
+		}
+	}
 	if srvCopy.DeleteSnack == nil {
 		srvCopy.DeleteSnack = func(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error) {
 			return nil, status.Errorf(codes.Unimplemented, "method DeleteSnack not implemented")
@@ -159,6 +196,10 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			{
 				MethodName: "ListSnacks",
 				Handler:    srvCopy.listSnacks,
+			},
+			{
+				MethodName: "updateSnack",
+				Handler:    srvCopy.updateSnack,
 			},
 			{
 				MethodName: "DeleteSnack",
@@ -191,6 +232,11 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 		ns.ListSnacks = h.ListSnacks
 	}
 	if h, ok := s.(interface {
+		UpdateSnack(context.Context, *UpdateSnackRequest) (*UpdateSnackResponse, error)
+	}); ok {
+		ns.UpdateSnack = h.UpdateSnack
+	}
+	if h, ok := s.(interface {
 		DeleteSnack(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
 	}); ok {
 		ns.DeleteSnack = h.DeleteSnack
@@ -205,5 +251,6 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 type UnstableSnackInventoryService interface {
 	CreateSnack(context.Context, *CreateSnackRequest) (*CreateSnackResponse, error)
 	ListSnacks(context.Context, *ListSnacksRequest) (*ListSnacksResponse, error)
+	UpdateSnack(context.Context, *UpdateSnackRequest) (*UpdateSnackResponse, error)
 	DeleteSnack(context.Context, *DeleteSnackRequest) (*DeleteSnackResponse, error)
 }
