@@ -128,3 +128,25 @@ func (s *SQLImpl) CreateLocation(ctx context.Context, name string) error {
 	}
 	return nil
 }
+
+// ListLocations reads all locations currently associated with SnackInventory.
+func (s *SQLImpl) ListLocations(ctx context.Context) ([]*sipb.Location, error) {
+	var retVal []*sipb.Location
+	rows, err := s.db.QueryContext(ctx, "SELECT name FROM LocationRegistry")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		retVal = append(retVal, &sipb.Location{Name: name})
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return retVal, nil
+}

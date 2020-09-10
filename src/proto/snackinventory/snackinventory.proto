@@ -77,6 +77,12 @@ message CreateLocationRequest {
 
 message CreateLocationResponse {}
 
+message ListLocationsRequest {}
+
+message ListLocationsResponse {
+  repeated Location locations = 1;
+}
+
 service SnackInventory {
 
   // ======= Snack Registry Operations ==================
@@ -92,4 +98,6 @@ service SnackInventory {
   // ======= Location Registry Operations ==================
 
   rpc CreateLocation(CreateLocationRequest) returns (CreateLocationResponse) {}
+
+  rpc ListLocations(ListLocationsRequest) returns (ListLocationsResponse) {}
 }

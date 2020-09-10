@@ -31,6 +31,8 @@ type FakeDBConnector struct {
 	DeleteSnackErr error
 
 	CreateLocationErr error
+	ListLocationsRes  []*sipb.Location
+	ListLocationsErr  error
 }
 
 func (f *FakeDBConnector) CreateSnack(_ context.Context, _, _ string) error {
@@ -54,4 +56,11 @@ func (f *FakeDBConnector) DeleteSnack(_ context.Context, _ string) error {
 
 func (f *FakeDBConnector) CreateLocation(_ context.Context, _ string) error {
 	return f.CreateLocationErr
+}
+
+func (f *FakeDBConnector) ListLocations(_ context.Context) ([]*sipb.Location, error) {
+	if f.ListLocationsErr != nil {
+		return nil, f.ListLocationsErr
+	}
+	return f.ListLocationsRes, nil
 }

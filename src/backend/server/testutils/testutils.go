@@ -53,9 +53,9 @@ func StartMysqldT(ctx context.Context, t *testing.T) (*sql.DB, func()) {
 	return db, mysqld.Stop
 }
 
-// CreateDatabaseAndTablesT creates database and tables to satisfy
-// SnackInventory storage model. Assumes DB cursor is not on a database.
-func CreateDatabaseAndTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
+// CreateDatabaseT creates a database and moves the cursor into it.
+// Assumes DB cursor is not on a database.
+func CreateDatabaseT(ctx context.Context, t *testing.T, db *sql.DB) {
 	t.Helper()
 
 	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
@@ -64,6 +64,11 @@ func CreateDatabaseAndTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
 	}
+}
+
+// CreateTablesT creates tables to satisfy SnackInventory storage model.
+// Assumes cursor is in database.
+func CreateTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 	if _, err := db.ExecContext(ctx, "CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255))"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
 			"CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255))", err)
@@ -71,6 +76,15 @@ func CreateDatabaseAndTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 	if _, err := db.ExecContext(ctx, "CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY)"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
 			"CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY)", err)
+	}
+}
+
+// DropTablesT drops tables in the current database corresponding to
+// SnackInventory's storage model. Assumes cursor is in database.
+func DropTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
+	if _, err := db.ExecContext(ctx, "DROP TABLE SnackRegistry, LocationRegistry"); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
+			"DROP TABLE SnackRegistry, LocationRegistry", err)
 	}
 }
 
@@ -83,6 +97,20 @@ func AddSnackT(ctx context.Context, t *testing.T, db *sql.DB, snack *sipb.Snack)
 	name := snack.GetName()
 
 	query := fmt.Sprintf("INSERT INTO SnackRegistry (barcode, name) VALUES(%q, %q)", barcode, name)
+
+	if _, err := db.ExecContext(ctx, query); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", query, err)
+	}
+}
+
+// AddLocationT adds a given Location to DB's LocationRegistry table.
+// Assumes DB cursor is in the correct database already.
+func AddLocationT(ctx context.Context, t *testing.T, db *sql.DB, location *sipb.Location) {
+	t.Helper()
+
+	name := location.GetName()
+
+	query := fmt.Sprintf("INSERT INTO LocationRegistry (name) VALUES(%q)", name)
 
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", query, err)

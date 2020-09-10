@@ -13,9 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-// Tests for this package spin up a local instance of mysqld and tear them down
-// before and after each test. Tests here are expected to be slow.
 package connector
 
 import (
@@ -28,188 +25,231 @@ import (
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
 
-func TestCreateSnack(t *testing.T) {
+// Implementation note: Spinning up a full mariadb / mysqld instance is slow.
+// Adding a new test that sets up and tears down a full instance adds ~10s.
+// However, we still want to make sure database modification from one test
+// don't spill over into other tests.
+// So, the testcases here follow a specific pattern of spinning up the instance
+// as setup, then each subtest creates tables -> performs test -> drops tables.
+
+// TestSuccess is a parent test to create a mariadb instance for subtests.
+func TestSuccess(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	db, close := testutils.StartMysqldT(ctx, t)
 	defer close()
 
-	testutils.CreateDatabaseAndTablesT(ctx, t, db)
+	testutils.CreateDatabaseT(ctx, t, db)
 
-	si := &SQLImpl{db: db}
-	if err := si.CreateSnack(ctx, "1", "testsnack"); err != nil {
-		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err %v, want err nil", "1", "testsnack", err)
-	}
+	t.Run("CreateSnack", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
 
-	want := []*sipb.Snack{
-		{
-			Barcode: "1",
-			Name:    "testsnack",
-		},
-	}
-	got, err := si.ListSnacks(ctx)
-	if err != nil {
-		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
-	}
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-		t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
-	}
+		si := &SQLImpl{db: db}
+		if err := si.CreateSnack(ctx, "1", "testsnack"); err != nil {
+			t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err %v, want err nil", "1", "testsnack", err)
+		}
+
+		want := []*sipb.Snack{
+			{
+				Barcode: "1",
+				Name:    "testsnack",
+			},
+		}
+		got, err := si.ListSnacks(ctx)
+		if err != nil {
+			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+		}
+		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
+			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
+		}
+	})
+
+	t.Run("ListSnacks", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
+
+		si := &SQLImpl{db: db}
+		got, err := si.ListSnacks(ctx)
+		if err != nil {
+			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+		}
+
+		want := []*sipb.Snack{
+			{
+				Barcode: "123",
+				Name:    "testsnack",
+			},
+		}
+
+		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
+			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
+		}
+	})
+
+	t.Run("UpdateSnack", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
+
+		si := &SQLImpl{db: db}
+		if err := si.UpdateSnack(ctx, "123", "realsnack"); err != nil {
+			t.Fatalf("si.UpdateSnack(ctx, %q, %q) = got err %v, want err nil", "123", "realsnack", err)
+		}
+
+		want := []*sipb.Snack{
+			{
+				Barcode: "123",
+				Name:    "realsnack",
+			},
+		}
+		got, err := si.ListSnacks(ctx)
+		if err != nil {
+			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+		}
+		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
+			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s\n", diff)
+		}
+	})
+
+	t.Run("DeleteSnack", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
+
+		si := &SQLImpl{db: db}
+		if err := si.DeleteSnack(ctx, "123"); err != nil {
+			t.Fatalf("si.DeleteSnack(ctx, %q) = got err %v, want err nil", "123", err)
+		}
+
+		got, err := si.ListSnacks(ctx)
+		if err != nil {
+			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+		}
+		if len(got) != 0 {
+			t.Fatalf("si.ListSnacks(ctx) = got %v, want []*sipb.Snack{}", got)
+		}
+	})
+
+	t.Run("CreateLocation", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		si := &SQLImpl{db: db}
+		if err := si.CreateLocation(ctx, "fridge"); err != nil {
+			t.Fatalf("si.CreateLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
+		}
+
+		want := []*sipb.Location{
+			{
+				Name: "fridge",
+			},
+		}
+		got, err := si.ListLocations(ctx)
+		if err != nil {
+			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+		}
+		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
+			t.Fatalf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
+		}
+	})
+
+	t.Run("ListLocations", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "fridge"})
+
+		si := &SQLImpl{db: db}
+		got, err := si.ListLocations(ctx)
+		if err != nil {
+			t.Fatalf("si.ListLocations(ctx) = got err %v, want err nil", err)
+		}
+
+		want := []*sipb.Location{
+			{
+				Name: "fridge",
+			},
+		}
+
+		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
+			t.Fatalf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
+		}
+	})
 }
 
-func TestCreateSnack_SelectError(t *testing.T) {
+// TestError is a parent test to create a mariadb instance for subtests.
+func TestError(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	db, close := testutils.StartMysqldT(ctx, t)
 	defer close()
 
-	// Create database, but without any tables.
-	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
-	}
-	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
-	}
+	testutils.CreateDatabaseT(ctx, t, db)
 
-	si := &SQLImpl{db: db}
-	if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
-		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
-	}
-}
+	// Try to read from a database with no tables, causing SELECT to fail.
+	t.Run("CreateSnack_SelectError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
+			t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+		}
+	})
 
-func TestCreateSnack_AlreadyExists(t *testing.T) {
-	ctx := context.Background()
+	t.Run("CreateSnack_AlreadyExists", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
 
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
+		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "1", Name: "testsnack"})
 
-	testutils.CreateDatabaseAndTablesT(ctx, t, db)
-	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "1", Name: "testsnack"})
+		si := &SQLImpl{db: db}
+		if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
+			t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+		}
+	})
 
-	si := &SQLImpl{db: db}
-	if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
-		t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
-	}
-}
+	t.Run("ListSnacks_SelectError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if _, err := si.ListSnacks(ctx); err == nil {
+			t.Fatal("si.ListSnacks(ctx) = got err nil, want err")
+		}
+	})
 
-func TestListSnacks(t *testing.T) {
-	ctx := context.Background()
+	t.Run("UpdateSnack_Error", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if err := si.UpdateSnack(ctx, "123", "realsnack"); err == nil {
+			t.Fatalf("si.UpdateSnack(ctx, %q, %q) = got err nil, want err", "123", "realsnack")
+		}
+	})
 
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
+	t.Run("CreateLocation_SelectError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if err := si.CreateLocation(ctx, "fridge"); err == nil {
+			t.Fatalf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
+		}
+	})
 
-	testutils.CreateDatabaseAndTablesT(ctx, t, db)
-	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
+	t.Run("CreateLocation_AlreadyExists", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
 
-	si := &SQLImpl{db: db}
-	got, err := si.ListSnacks(ctx)
-	if err != nil {
-		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
-	}
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "fridge"})
 
-	want := []*sipb.Snack{
-		{
-			Barcode: "123",
-			Name:    "testsnack",
-		},
-	}
+		si := &SQLImpl{db: db}
+		if err := si.CreateLocation(ctx, "fridge"); err == nil {
+			t.Fatalf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
+		}
+	})
 
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-		t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
-	}
-}
-
-// TestListSnacks_SelectError creates and connects to a database, but the
-// "SnackRegistry" table doesn't exist, causing SELECT statements to fail.
-func TestListSnacks_SelectError(t *testing.T) {
-	ctx := context.Background()
-
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
-
-	// Create database, but without any tables.
-	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
-	}
-	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
-	}
-
-	si := &SQLImpl{db: db}
-	if _, err := si.ListSnacks(ctx); err == nil {
-		t.Fatal("si.ListSnacks(ctx) = got err nil, want err")
-	}
-}
-
-func TestUpdateSnack(t *testing.T) {
-	ctx := context.Background()
-
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
-
-	testutils.CreateDatabaseAndTablesT(ctx, t, db)
-	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
-
-	si := &SQLImpl{db: db}
-	if err := si.UpdateSnack(ctx, "123", "realsnack"); err != nil {
-		t.Fatalf("si.UpdateSnack(ctx, %q, %q) = got err %v, want err nil", "123", "realsnack", err)
-	}
-
-	want := []*sipb.Snack{
-		{
-			Barcode: "123",
-			Name:    "realsnack",
-		},
-	}
-	got, err := si.ListSnacks(ctx)
-	if err != nil {
-		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
-	}
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-		t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s\n", diff)
-	}
-}
-
-// TestUpdateSnack_UpdateError simulates an error by trying to update
-// a row in a table that doesn't exist.
-func TestUpdateSnack_UpdateError(t *testing.T) {
-	ctx := context.Background()
-
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
-
-	// Create database, but without any tables.
-	if _, err := db.ExecContext(ctx, "CREATE DATABASE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "CREATE DATABASE SnackInventory", err)
-	}
-	if _, err := db.ExecContext(ctx, "USE SnackInventory"); err != nil {
-		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", "USE SnackInventory", err)
-	}
-
-	si := &SQLImpl{db: db}
-	if err := si.UpdateSnack(ctx, "123", "realsnack"); err == nil {
-		t.Fatalf("si.UpdateSnack(ctx, %q, %q) = got err nil, want err", "123", "realsnack")
-	}
-}
-
-func TestDeleteSnack(t *testing.T) {
-	ctx := context.Background()
-
-	db, close := testutils.StartMysqldT(ctx, t)
-	defer close()
-
-	testutils.CreateDatabaseAndTablesT(ctx, t, db)
-	testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "123", Name: "testsnack"})
-
-	si := &SQLImpl{db: db}
-	if err := si.DeleteSnack(ctx, "123"); err != nil {
-		t.Fatalf("si.DeleteSnack(ctx, %q) = got err %v, want err nil", "123", err)
-	}
-
-	got, err := si.ListSnacks(ctx)
-	if err != nil {
-		t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
-	}
-	if len(got) != 0 {
-		t.Fatalf("si.ListSnacks(ctx) = got %v, want []*sipb.Snack{}", got)
-	}
+	t.Run("ListLocations_SelectError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if _, err := si.ListLocations(ctx); err == nil {
+			t.Fatalf("si.ListLocations(ctx) = got err nil, want err")
+		}
+	})
 }

@@ -109,6 +109,10 @@ func (s *snackInventoryServer) CreateLocation(ctx context.Context, req *sipb.Cre
 	return &sipb.CreateLocationResponse{}, nil
 }
 
+func (s *snackInventoryServer) ListLocations(ctx context.Context, req *sipb.ListLocationsRequest) (*sipb.ListLocationsResponse, error) {
+	return &sipb.ListLocationsResponse{}, nil
+}
+
 func main() {
 	flag.Parse()
 
