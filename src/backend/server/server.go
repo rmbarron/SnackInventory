@@ -58,6 +58,7 @@ type dbConnector interface {
 
 	// Location Registry Operations
 	CreateLocation(ctx context.Context, name string) error
+	ListLocations(ctx context.Context) ([]*sipb.Location, error)
 }
 
 type snackInventoryServer struct {
@@ -110,7 +111,11 @@ func (s *snackInventoryServer) CreateLocation(ctx context.Context, req *sipb.Cre
 }
 
 func (s *snackInventoryServer) ListLocations(ctx context.Context, req *sipb.ListLocationsRequest) (*sipb.ListLocationsResponse, error) {
-	return &sipb.ListLocationsResponse{}, nil
+	locations, err := s.c.ListLocations(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not list locations: %v", err)
+	}
+	return &sipb.ListLocationsResponse{Locations: locations}, nil
 }
 
 func main() {
