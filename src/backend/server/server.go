@@ -50,10 +50,15 @@ var (
 
 // Interface for connecting to backing storage.
 type dbConnector interface {
+	// Snack Registry Operations
 	CreateSnack(ctx context.Context, barcode, name string) error
 	ListSnacks(ctx context.Context) ([]*sipb.Snack, error)
 	UpdateSnack(ctx context.Context, barcode, name string) error
 	DeleteSnack(ctx context.Context, barcode string) error
+
+	// Location Registry Operations
+	CreateLocation(ctx context.Context, name string) error
+	ListLocations(ctx context.Context) ([]*sipb.Location, error)
 }
 
 type snackInventoryServer struct {
@@ -93,6 +98,24 @@ func (s *snackInventoryServer) DeleteSnack(ctx context.Context, req *sipb.Delete
 		return nil, status.Errorf(codes.Internal, "could not delete snack: %v", err)
 	}
 	return &sipb.DeleteSnackResponse{}, nil
+}
+
+func (s *snackInventoryServer) CreateLocation(ctx context.Context, req *sipb.CreateLocationRequest) (*sipb.CreateLocationResponse, error) {
+	if err := s.c.CreateLocation(ctx, req.GetLocation().GetName()); err != nil {
+		if c := status.Code(err); c == codes.AlreadyExists {
+			return nil, err
+		}
+		return nil, status.Errorf(codes.Internal, "could not create location: %v", err)
+	}
+	return &sipb.CreateLocationResponse{}, nil
+}
+
+func (s *snackInventoryServer) ListLocations(ctx context.Context, req *sipb.ListLocationsRequest) (*sipb.ListLocationsResponse, error) {
+	locations, err := s.c.ListLocations(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not list locations: %v", err)
+	}
+	return &sipb.ListLocationsResponse{Locations: locations}, nil
 }
 
 func main() {

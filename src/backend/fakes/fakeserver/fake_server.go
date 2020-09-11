@@ -25,6 +25,7 @@ import (
 
 // FakeSnackInventoryServer implements sipb.SnackInventoryService.
 type FakeSnackInventoryServer struct {
+	// SnackRegistry Operations.
 	// CreateSnackRes is the response for CreateSnack.
 	CreateSnackRes *sipb.CreateSnackResponse
 	// CreateSnackErr is the error returned on a call.
@@ -36,6 +37,12 @@ type FakeSnackInventoryServer struct {
 	UpdateSnackErr error
 	DeleteSnackRes *sipb.DeleteSnackResponse
 	DeleteSnackErr error
+
+	// LocationRegistry Operations.
+	CreateLocationRes *sipb.CreateLocationResponse
+	CreateLocationErr error
+	ListLocationsRes  *sipb.ListLocationsResponse
+	ListLocationsErr  error
 }
 
 // CreateSnack creates a snack in SnackInventory.
@@ -68,4 +75,20 @@ func (f *FakeSnackInventoryServer) DeleteSnack(_ context.Context, _ *sipb.Delete
 		return &sipb.DeleteSnackResponse{}, f.DeleteSnackErr
 	}
 	return f.DeleteSnackRes, nil
+}
+
+// CreateLocation adds a new location to SnackInventory.
+func (f *FakeSnackInventoryServer) CreateLocation(_ context.Context, _ *sipb.CreateLocationRequest) (*sipb.CreateLocationResponse, error) {
+	if f.CreateLocationErr != nil {
+		return &sipb.CreateLocationResponse{}, f.CreateLocationErr
+	}
+	return f.CreateLocationRes, nil
+}
+
+// ListLocations lists all locations in SnackInventory.
+func (f *FakeSnackInventoryServer) ListLocations(_ context.Context, _ *sipb.ListLocationsRequest) (*sipb.ListLocationsResponse, error) {
+	if f.ListLocationsErr != nil {
+		return &sipb.ListLocationsResponse{}, f.ListLocationsErr
+	}
+	return f.ListLocationsRes, nil
 }

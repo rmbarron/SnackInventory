@@ -160,3 +160,89 @@ func TestDeleteSnack_Error(t *testing.T) {
 		t.Fatalf("si.DeleteSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
+
+func TestCreateLocation(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err != nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err %v, want err nil", req, err)
+	}
+}
+
+func TestCreateLocation_AlreadyExists(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateLocationErr: status.Error(codes.AlreadyExists, "already exists"),
+	}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+	}
+}
+
+func TestCreateLocation_Internal(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		CreateLocationErr: status.Error(codes.Internal, "internally failed"),
+	}
+
+	req := &sipb.CreateLocationRequest{
+		Location: &sipb.Location{Name: "fridge"},
+	}
+
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.CreateLocation(context.Background(), req); err == nil {
+		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+	}
+}
+
+func TestListLocations(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		ListLocationsRes: []*sipb.Location{
+			{
+				Name: "fridge",
+			},
+		},
+	}
+
+	req := &sipb.ListLocationsRequest{}
+	si := snackInventoryServer{c: fdbc}
+	got, err := si.ListLocations(context.Background(), req)
+	if err != nil {
+		t.Fatalf("si.ListLocations(ctx, %v) = got err %v, want err nil", req, err)
+	}
+
+	want := &sipb.ListLocationsResponse{
+		Locations: []*sipb.Location{
+			{
+				Name: "fridge",
+			},
+		},
+	}
+	if diff := cmp.Diff(
+		got, want,
+		cmpopts.IgnoreUnexported(sipb.ListLocationsResponse{}),
+		cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
+		t.Fatalf("si.ListLocations(ctx, %v) = got diff (-got +want): %s", req, diff)
+	}
+}
+
+func TestListLocationsError(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		ListLocationsErr: status.Error(codes.Internal, "something went wrong"),
+	}
+
+	req := &sipb.ListLocationsRequest{}
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.ListLocations(context.Background(), req); err == nil {
+		t.Fatalf("si.ListLocations(ctx, %v) = got err nil, want err", req)
+	}
+}
