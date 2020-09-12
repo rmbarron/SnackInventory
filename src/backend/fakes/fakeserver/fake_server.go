@@ -43,6 +43,8 @@ type FakeSnackInventoryServer struct {
 	CreateLocationErr error
 	ListLocationsRes  *sipb.ListLocationsResponse
 	ListLocationsErr  error
+	DeleteLocationRes *sipb.DeleteLocationResponse
+	DeleteLocationErr error
 }
 
 // CreateSnack creates a snack in SnackInventory.
@@ -91,4 +93,12 @@ func (f *FakeSnackInventoryServer) ListLocations(_ context.Context, _ *sipb.List
 		return &sipb.ListLocationsResponse{}, f.ListLocationsErr
 	}
 	return f.ListLocationsRes, nil
+}
+
+// DeleteLocation removes a location from SnackInventory.
+func (f *FakeSnackInventoryServer) DeleteLocation(_ context.Context, _ *sipb.DeleteLocationRequest) (*sipb.DeleteLocationResponse, error) {
+	if f.DeleteLocationErr != nil {
+		return &sipb.DeleteLocationResponse{}, f.DeleteLocationErr
+	}
+	return f.DeleteLocationRes, nil
 }

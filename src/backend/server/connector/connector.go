@@ -150,3 +150,11 @@ func (s *SQLImpl) ListLocations(ctx context.Context) ([]*sipb.Location, error) {
 	}
 	return retVal, nil
 }
+
+// DeleteLocation removes a location with the given name from SnackInventory.
+func (s *SQLImpl) DeleteLocation(ctx context.Context, name string) error {
+	if _, err := s.db.ExecContext(ctx, "DELETE FROM LocationRegistry WHERE name IN (?)", name); err != nil {
+		return err
+	}
+	return nil
+}

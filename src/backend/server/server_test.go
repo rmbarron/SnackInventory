@@ -246,3 +246,25 @@ func TestListLocationsError(t *testing.T) {
 		t.Fatalf("si.ListLocations(ctx, %v) = got err nil, want err", req)
 	}
 }
+
+func TestDeleteLocation(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{}
+
+	req := &sipb.DeleteLocationRequest{Name: "fridge"}
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.DeleteLocation(context.Background(), req); err != nil {
+		t.Fatalf("si.DeleteLocation(ctx, %v) = got err %v, want err nil", req, err)
+	}
+}
+
+func TestDeleteLocationError(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		DeleteLocationErr: status.Error(codes.Internal, "something went wrong"),
+	}
+
+	req := &sipb.DeleteLocationRequest{}
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.DeleteLocation(context.Background(), req); err == nil {
+		t.Fatalf("si.DeleteLocation(ctx, %v) = got err nil, want err", req)
+	}
+}

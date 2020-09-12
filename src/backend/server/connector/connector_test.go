@@ -181,6 +181,26 @@ func TestSuccess(t *testing.T) {
 			t.Fatalf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
 		}
 	})
+
+	t.Run("DeleteLocation", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "fridge"})
+
+		si := &SQLImpl{db: db}
+		if err := si.DeleteLocation(ctx, "fridge"); err != nil {
+			t.Fatalf("si.DeleteLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
+		}
+
+		got, err := si.ListLocations(ctx)
+		if err != nil {
+			t.Fatalf("si.ListLocations(ctx) = got err %v, want err nil", err)
+		}
+		if len(got) != 0 {
+			t.Fatalf("si.ListLocations(ctx) = got %v, want []*sipb.Location{}", got)
+		}
+	})
 }
 
 // TestError is a parent test to create a mariadb instance for subtests.
