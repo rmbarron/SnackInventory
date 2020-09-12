@@ -59,6 +59,7 @@ type dbConnector interface {
 	// Location Registry Operations
 	CreateLocation(ctx context.Context, name string) error
 	ListLocations(ctx context.Context) ([]*sipb.Location, error)
+	DeleteLocation(ctx context.Context, name string) error
 }
 
 type snackInventoryServer struct {
@@ -116,6 +117,13 @@ func (s *snackInventoryServer) ListLocations(ctx context.Context, req *sipb.List
 		return nil, status.Errorf(codes.Internal, "could not list locations: %v", err)
 	}
 	return &sipb.ListLocationsResponse{Locations: locations}, nil
+}
+
+func (s *snackInventoryServer) DeleteLocation(ctx context.Context, req *sipb.DeleteLocationRequest) (*sipb.DeleteLocationResponse, error) {
+	if err := s.c.DeleteLocation(ctx, req.GetName()); err != nil {
+		return nil, status.Errorf(codes.Internal, "could not delete location: %v", err)
+	}
+	return &sipb.DeleteLocationResponse{}, nil
 }
 
 func main() {

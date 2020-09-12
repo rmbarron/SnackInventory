@@ -83,6 +83,12 @@ message ListLocationsResponse {
   repeated Location locations = 1;
 }
 
+message DeleteLocationRequest {
+  string name = 1;
+}
+
+message DeleteLocationResponse {}
+
 service SnackInventory {
 
   // ======= Snack Registry Operations ==================
@@ -100,4 +106,6 @@ service SnackInventory {
   rpc CreateLocation(CreateLocationRequest) returns (CreateLocationResponse) {}
 
   rpc ListLocations(ListLocationsRequest) returns (ListLocationsResponse) {}
+
+  rpc DeleteLocation(DeleteLocationRequest) returns (DeleteLocationResponse) {}
 }
