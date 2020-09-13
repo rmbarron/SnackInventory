@@ -24,6 +24,7 @@ type SnackInventoryClient interface {
 	CreateLocation(ctx context.Context, in *CreateLocationRequest, opts ...grpc.CallOption) (*CreateLocationResponse, error)
 	ListLocations(ctx context.Context, in *ListLocationsRequest, opts ...grpc.CallOption) (*ListLocationsResponse, error)
 	DeleteLocation(ctx context.Context, in *DeleteLocationRequest, opts ...grpc.CallOption) (*DeleteLocationResponse, error)
+	AddSnack(ctx context.Context, in *AddSnackRequest, opts ...grpc.CallOption) (*AddSnackResponse, error)
 }
 
 type snackInventoryClient struct {
@@ -125,6 +126,19 @@ func (c *snackInventoryClient) DeleteLocation(ctx context.Context, in *DeleteLoc
 	return out, nil
 }
 
+var snackInventoryAddSnackStreamDesc = &grpc.StreamDesc{
+	StreamName: "AddSnack",
+}
+
+func (c *snackInventoryClient) AddSnack(ctx context.Context, in *AddSnackRequest, opts ...grpc.CallOption) (*AddSnackResponse, error) {
+	out := new(AddSnackResponse)
+	err := c.cc.Invoke(ctx, "/snackinventory.SnackInventory/AddSnack", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SnackInventoryService is the service API for SnackInventory service.
 // Fields should be assigned to their respective handler implementations only before
 // RegisterSnackInventoryService is called.  Any unassigned fields will result in the
@@ -137,6 +151,7 @@ type SnackInventoryService struct {
 	CreateLocation func(context.Context, *CreateLocationRequest) (*CreateLocationResponse, error)
 	ListLocations  func(context.Context, *ListLocationsRequest) (*ListLocationsResponse, error)
 	DeleteLocation func(context.Context, *DeleteLocationRequest) (*DeleteLocationResponse, error)
+	AddSnack       func(context.Context, *AddSnackRequest) (*AddSnackResponse, error)
 }
 
 func (s *SnackInventoryService) createSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -258,6 +273,23 @@ func (s *SnackInventoryService) deleteLocation(_ interface{}, ctx context.Contex
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func (s *SnackInventoryService) addSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddSnackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return s.AddSnack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     s,
+		FullMethod: "/snackinventory.SnackInventory/AddSnack",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return s.AddSnack(ctx, req.(*AddSnackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // RegisterSnackInventoryService registers a service implementation with a gRPC server.
 func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryService) {
@@ -297,6 +329,11 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			return nil, status.Errorf(codes.Unimplemented, "method DeleteLocation not implemented")
 		}
 	}
+	if srvCopy.AddSnack == nil {
+		srvCopy.AddSnack = func(context.Context, *AddSnackRequest) (*AddSnackResponse, error) {
+			return nil, status.Errorf(codes.Unimplemented, "method AddSnack not implemented")
+		}
+	}
 	sd := grpc.ServiceDesc{
 		ServiceName: "snackinventory.SnackInventory",
 		Methods: []grpc.MethodDesc{
@@ -327,6 +364,10 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			{
 				MethodName: "DeleteLocation",
 				Handler:    srvCopy.deleteLocation,
+			},
+			{
+				MethodName: "AddSnack",
+				Handler:    srvCopy.addSnack,
 			},
 		},
 		Streams:  []grpc.StreamDesc{},
@@ -379,6 +420,11 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 	}); ok {
 		ns.DeleteLocation = h.DeleteLocation
 	}
+	if h, ok := s.(interface {
+		AddSnack(context.Context, *AddSnackRequest) (*AddSnackResponse, error)
+	}); ok {
+		ns.AddSnack = h.AddSnack
+	}
 	return ns
 }
 
@@ -394,4 +440,5 @@ type UnstableSnackInventoryService interface {
 	CreateLocation(context.Context, *CreateLocationRequest) (*CreateLocationResponse, error)
 	ListLocations(context.Context, *ListLocationsRequest) (*ListLocationsResponse, error)
 	DeleteLocation(context.Context, *DeleteLocationRequest) (*DeleteLocationResponse, error)
+	AddSnack(context.Context, *AddSnackRequest) (*AddSnackResponse, error)
 }

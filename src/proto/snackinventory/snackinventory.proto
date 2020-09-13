@@ -89,6 +89,22 @@ message DeleteLocationRequest {
 
 message DeleteLocationResponse {}
 
+// ======= Location Registry Operations ==================
+
+// Adds a snack to a location.
+// Will create minimal entries in the snack & location registries if either
+// doesn't exist.
+message AddSnackRequest{
+  string snackBarcode = 1;
+  string locationName = 2;
+}
+
+message AddSnackResponse{
+  // Whether or not minimal entries for snack / location were added.
+  bool snackCreated = 1;
+  bool locationCreated = 2;
+}
+
 service SnackInventory {
 
   // ======= Snack Registry Operations ==================
@@ -108,4 +124,8 @@ service SnackInventory {
   rpc ListLocations(ListLocationsRequest) returns (ListLocationsResponse) {}
 
   rpc DeleteLocation(DeleteLocationRequest) returns (DeleteLocationResponse) {}
+
+  // ======= Location Contents Operations ==================
+
+  rpc AddSnack(AddSnackRequest) returns (AddSnackResponse) {}
 }

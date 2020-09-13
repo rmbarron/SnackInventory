@@ -77,11 +77,26 @@ func CreateTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
 			"CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY)", err)
 	}
+	createMappingTableQuery := `CREATE TABLE LocationContents (
+		ContentID int NOT NULL AUTO_INCREMENT,
+		snackBarcode VARCHAR(20), locationName VARCHAR(30),
+		numPresent int,
+		PRIMARY KEY (ContentID),
+		FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode),
+		FOREIGN KEY (locationName) REFERENCES LocationRegistry(name))`
+	if _, err := db.ExecContext(ctx, createMappingTableQuery); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
+			createMappingTableQuery, err)
+	}
 }
 
 // DropTablesT drops tables in the current database corresponding to
 // SnackInventory's storage model. Assumes cursor is in database.
 func DropTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
+	if _, err := db.ExecContext(ctx, "DROP TABLE LocationContents"); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
+			"DROP TABLE LocationContext", err)
+	}
 	if _, err := db.ExecContext(ctx, "DROP TABLE SnackRegistry, LocationRegistry"); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil",
 			"DROP TABLE SnackRegistry, LocationRegistry", err)

@@ -126,6 +126,10 @@ func (s *snackInventoryServer) DeleteLocation(ctx context.Context, req *sipb.Del
 	return &sipb.DeleteLocationResponse{}, nil
 }
 
+func (s *snackInventoryServer) AddSnack(ctx context.Context, req *sipb.AddSnackRequest) (*sipb.AddSnackResponse, error) {
+	return &sipb.AddSnackResponse{}, nil
+}
+
 func main() {
 	flag.Parse()
 
