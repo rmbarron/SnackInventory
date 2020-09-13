@@ -27,10 +27,14 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql" // MySQL driver.
+	driver "github.com/go-sql-driver/mysql" // MySQL driver.
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	sqlAlreadyExistsError = 1062
 )
 
 // SQLImpl implements a connector a SQL DB.
@@ -56,16 +60,11 @@ func NewSQLImpl(ctx context.Context, user, password, hostport, dbname string) (*
 // CreateSnack creates a snack in the sql database.
 // Returns an AlreadyExists error if it does.
 func (s *SQLImpl) CreateSnack(ctx context.Context, barcode, name string) error {
-	rows, err := s.db.QueryContext(ctx, "SELECT * FROM SnackRegistry WHERE barcode IN (?)", barcode)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	// Check if the value already exists by whether there are results in the Rows.
-	if rows.Next() {
-		return status.Errorf(codes.AlreadyExists, "barcode %q already has an entry", barcode)
-	}
 	if _, err := s.db.ExecContext(ctx, "INSERT INTO SnackRegistry (barcode, name) VALUES(?, ?)", barcode, name); err != nil {
+		mysqlerr, ok := err.(*driver.MySQLError)
+		if ok && mysqlerr.Number == sqlAlreadyExistsError {
+			return status.Error(codes.AlreadyExists, err.Error())
+		}
 		return err
 	}
 	return nil
@@ -114,16 +113,11 @@ func (s *SQLImpl) DeleteSnack(ctx context.Context, barcode string) error {
 // CreateLocation adds a new location to SnackInventory.
 // Returns an AlreadyExists error if it does.
 func (s *SQLImpl) CreateLocation(ctx context.Context, name string) error {
-	rows, err := s.db.QueryContext(ctx, "SELECT * FROM LocationRegistry WHERE name IN (?)", name)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	// Check if the value already exists by whether there are results in the Rows.
-	if rows.Next() {
-		return status.Errorf(codes.AlreadyExists, "name %q already has an entry", name)
-	}
 	if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationRegistry (name) VALUES(?)", name); err != nil {
+		mysqlerr, ok := err.(*driver.MySQLError)
+		if ok && mysqlerr.Number == sqlAlreadyExistsError {
+			return status.Error(codes.AlreadyExists, err.Error())
+		}
 		return err
 	}
 	return nil
