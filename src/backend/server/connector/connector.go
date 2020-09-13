@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	sqlAlreadyExistsError = 1062
+	sqlAlreadyExistsError      = 1062
+	sqlChildRowForeignKeyError = 1452
 )
 
 // SQLImpl implements a connector a SQL DB.
@@ -151,4 +152,66 @@ func (s *SQLImpl) DeleteLocation(ctx context.Context, name string) error {
 		return err
 	}
 	return nil
+}
+
+// I wonder if AddSnack could be handled more gracefully from a DBA standpoint?
+// Currently, it operates well from a golang perspective. However, there are
+// race conditions between each of the queries. AFAICT, there is no method of
+// locking feasible for SQL databases. We could use a mutex lock, but that ofc
+// won't lock between replicated tasks. We could probably use a lock service,
+// lock file, or lock table of some sort, but it is unclear how that would look
+// if we start replicating the service.
+// This problem likely becomes a moot point if the conditional update v insert
+// can all be handled inside a SQL query, albeit harder for me to maintain.
+
+// TODO: Test this entire function.
+
+// AddSnack adds a snack:location mapping to SnackInventory.
+// If snack or location does not exist, a minimal entry is added.
+// Bool for entry being created is returned - requested string is the key.
+func (s *SQLImpl) AddSnack(ctx context.Context, snackBarcode, locationName string) (createdSnack, createdLocation bool, err error) {
+	// First, try to update an existing row.
+	result, err := s.db.ExecContext(ctx, "UPDATE LocationContents SET numPresent=numPresent+1 WHERE snackBarcode IN (?) and locationName IN (?)", snackBarcode, locationName)
+	if err != nil {
+		return createdSnack, createdLocation, err // false, false, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return createdSnack, createdLocation, err // false, false, err
+	}
+	// Since we're updating by all the foreign keys, this operation can only
+	// affect 0 or 1 rows. If it affected 1 row, we know it succeeded.
+	if rowsAffected == 1 {
+		return createdSnack, createdLocation, nil
+	}
+	// No rows were affected, which means we need to add a new row.
+	if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
+		mysqlerr, ok := err.(*driver.MySQLError)
+		// Add child rows if exec fails because they are missing.
+		if ok && mysqlerr.Number == sqlChildRowForeignKeyError {
+			createdSnack = true
+			if err := s.CreateSnack(ctx, snackBarcode, ""); err != nil {
+				createdSnack = false
+				// Move on if it already exists.
+				if c := status.Code(err); c != codes.AlreadyExists {
+					return createdSnack, createdLocation, err
+				}
+			}
+			createdLocation = true
+			if err := s.CreateLocation(ctx, locationName); err != nil {
+				createdLocation = false
+				// Move on if it already exists
+				if c := status.Code(err); c != codes.AlreadyExists {
+					return createdSnack, createdLocation, err
+				}
+			}
+			// Now our child rows should exist, so we'll try once more to add the mapping.
+			if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
+				return createdSnack, createdLocation, err
+			}
+		}
+		// We've remediated the error, so this is actually a success path.
+		return createdSnack, createdLocation, nil
+	}
+	return createdSnack, createdLocation, nil // false, false, nil
 }

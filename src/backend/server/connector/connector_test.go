@@ -17,6 +17,7 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -199,6 +200,50 @@ func TestSuccess(t *testing.T) {
 		}
 		if len(got) != 0 {
 			t.Fatalf("si.ListLocations(ctx) = got %v, want []*sipb.Location{}", got)
+		}
+	})
+
+	t.Run("AddSnack_UpdateExistingMapping", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "1337", Name: "leetTreat"})
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "cupboard"})
+		testutils.AddSnackMappingT(ctx, t, db, "1337", "cupboard", 1)
+
+		si := &SQLImpl{db: db}
+		createdSnack, createdLocation, err := si.AddSnack(ctx, "1337", "cupboard")
+		if err != nil {
+			t.Fatalf("si.AddSnack(ctx, %q, %q) = got err %v, want err nil", "1337", "cupboard", err)
+		}
+		if createdSnack {
+			t.Fatalf("si.AddSnack(ctx, %q, %q) = got createdSnack true, want false", "1337", "cupboard")
+		}
+		if createdLocation {
+			t.Fatalf("si.AddSnack(ctx, %q, %q) = got createdLocation true, want false", "1337", "cupboard")
+		}
+
+		// TODO: move this to a ListMappings call.
+		var count int
+		selectQuery := fmt.Sprintf("SELECT numPresent FROM LocationContents WHERE snackBarcode IN (%q) AND locationName IN (%q)", "1337", "cupboard")
+		rows, err := db.QueryContext(ctx, selectQuery)
+		if err != nil {
+			t.Fatalf("db.QueryContext(ctx, %q) = got err %v, want err nil", selectQuery, err)
+		}
+		defer rows.Close()
+
+		if !rows.Next() {
+			t.Fatalf("db.QueryContext(ctx, %q) = got 0 rows, want 1", selectQuery)
+		}
+		if err = rows.Scan(&count); err != nil {
+			t.Fatalf("rows.Scan(&count) = got err %v, want err nil", err)
+		}
+		if err = rows.Err(); err != nil {
+			t.Fatalf("rows.Err() = got err %v, want err nil", err)
+		}
+
+		if count != 2 {
+			t.Fatalf("si.AddSnack(ctx, %q, %q) = got count %d, want 2", "1337", "cupboard", count)
 		}
 	})
 }

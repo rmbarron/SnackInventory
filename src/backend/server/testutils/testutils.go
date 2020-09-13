@@ -80,7 +80,7 @@ func CreateTablesT(ctx context.Context, t *testing.T, db *sql.DB) {
 	createMappingTableQuery := `CREATE TABLE LocationContents (
 		ContentID int NOT NULL AUTO_INCREMENT,
 		snackBarcode VARCHAR(20), locationName VARCHAR(30),
-		numPresent int,
+		numPresent int NOT NULL,
 		PRIMARY KEY (ContentID),
 		FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode),
 		FOREIGN KEY (locationName) REFERENCES LocationRegistry(name))`
@@ -126,6 +126,18 @@ func AddLocationT(ctx context.Context, t *testing.T, db *sql.DB, location *sipb.
 	name := location.GetName()
 
 	query := fmt.Sprintf("INSERT INTO LocationRegistry (name) VALUES(%q)", name)
+
+	if _, err := db.ExecContext(ctx, query); err != nil {
+		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", query, err)
+	}
+}
+
+// AddSnackMappingT inserts a snack:location entry in LocationContents table.
+// Assumes DB cursor is in the correct database already.
+func AddSnackMappingT(ctx context.Context, t *testing.T, db *sql.DB, snackBarcode, locationName string, numPresent int) {
+	t.Helper()
+
+	query := fmt.Sprintf("INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(%q, %q, %d)", snackBarcode, locationName, numPresent)
 
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", query, err)

@@ -60,6 +60,9 @@ type dbConnector interface {
 	CreateLocation(ctx context.Context, name string) error
 	ListLocations(ctx context.Context) ([]*sipb.Location, error)
 	DeleteLocation(ctx context.Context, name string) error
+
+	// Location Contents Operations
+	AddSnack(ctx context.Context, snackBarcode, locationName string) (createdSnack, createdLocation bool, err error)
 }
 
 type snackInventoryServer struct {
@@ -127,7 +130,13 @@ func (s *snackInventoryServer) DeleteLocation(ctx context.Context, req *sipb.Del
 }
 
 func (s *snackInventoryServer) AddSnack(ctx context.Context, req *sipb.AddSnackRequest) (*sipb.AddSnackResponse, error) {
-	return &sipb.AddSnackResponse{}, nil
+	createdSnack, createdLocation, err := s.c.AddSnack(ctx, req.GetSnackBarcode(), req.GetLocationName())
+	// Even if we have an error, we still need to fill in if foreign values
+	// were created.
+	return &sipb.AddSnackResponse{
+		SnackCreated:    createdSnack,
+		LocationCreated: createdLocation,
+	}, err
 }
 
 func main() {

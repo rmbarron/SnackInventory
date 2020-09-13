@@ -35,7 +35,7 @@ SnackRegistry: barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255)
 
 LocationRegistry: name VARCHAR(30)
 
-LocationContents: ContentID int NOT NULL AUTO_INCREMENT, snackBarcode VARCHAR(20), locationName VARCHAR(30), numPresent int, PRIMARY KEY (ContentID), FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode), FOREIGN KEY (locationName) REFERENCES LocationRegistry(name)
+LocationContents: ContentID int NOT NULL AUTO_INCREMENT, snackBarcode VARCHAR(20), locationName VARCHAR(30), numPresent int NOT NULL, PRIMARY KEY (ContentID), FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode), FOREIGN KEY (locationName) REFERENCES LocationRegistry(name)
 
 # Setup
 
@@ -82,7 +82,7 @@ instance:
   *  `USE SnackInventory;`
   *  `CREATE TABLE SnackRegistry ( barcode VARCHAR(20) PRIMARY KEY, name VARCHAR(255));`
   *  `CREATE TABLE LocationRegistry ( name VARCHAR(30) PRIMARY KEY);`
-  *  `CREATE TABLE LocationContents (ContentID int NOT NULL AUTO_INCREMENT, snackBarcode VARCHAR(20), locationName VARCHAR(30), numPresent int, PRIMARY KEY (ContentID), FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode), FOREIGN KEY (locationName) REFERENCES LocationRegistry(name));`
+  *  `CREATE TABLE LocationContents (ContentID int NOT NULL AUTO_INCREMENT, snackBarcode VARCHAR(20), locationName VARCHAR(30), numPresent int NOT NULL, PRIMARY KEY (ContentID), FOREIGN KEY (snackBarcode) REFERENCES SnackRegistry(barcode), FOREIGN KEY (locationName) REFERENCES LocationRegistry(name));`
   *  `GRANT ALL PRIVILEGES ON SnackInventory.* TO '$USER'@'$NETWORK' IDENTIFIED BY '$PASSWORD' WITH GRANT OPTION;`
   *  `FLUSH PRIVILEGES;`
 
