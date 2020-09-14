@@ -164,13 +164,12 @@ func (s *SQLImpl) DeleteLocation(ctx context.Context, name string) error {
 // This problem likely becomes a moot point if the conditional update v insert
 // can all be handled inside a SQL query, albeit harder for me to maintain.
 
-// TODO: Test this entire function.
-
 // AddSnack adds a snack:location mapping to SnackInventory.
 // If snack or location does not exist, a minimal entry is added.
 // Bool for entry being created is returned - requested string is the key.
 func (s *SQLImpl) AddSnack(ctx context.Context, snackBarcode, locationName string) (createdSnack, createdLocation bool, err error) {
 	// First, try to update an existing row.
+	// This should only fail if the LocationContents table does not exist.
 	result, err := s.db.ExecContext(ctx, "UPDATE LocationContents SET numPresent=numPresent+1 WHERE snackBarcode IN (?) and locationName IN (?)", snackBarcode, locationName)
 	if err != nil {
 		return createdSnack, createdLocation, err // false, false, err
@@ -188,31 +187,34 @@ func (s *SQLImpl) AddSnack(ctx context.Context, snackBarcode, locationName strin
 	if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
 		// TODO: We can likely rephrase this to remove an indentation block.
 		mysqlerr, ok := err.(*driver.MySQLError)
+		if !ok {
+			return createdSnack, createdLocation, err
+		}
 		// Add child rows if exec fails because they are missing.
-		if ok && mysqlerr.Number == sqlChildRowForeignKeyError {
-			createdSnack = true
-			if err := s.CreateSnack(ctx, snackBarcode, ""); err != nil {
-				createdSnack = false
-				// Move on if it already exists.
-				if c := status.Code(err); c != codes.AlreadyExists {
-					return createdSnack, createdLocation, err
-				}
-			}
-			createdLocation = true
-			if err := s.CreateLocation(ctx, locationName); err != nil {
-				createdLocation = false
-				// Move on if it already exists
-				if c := status.Code(err); c != codes.AlreadyExists {
-					return createdSnack, createdLocation, err
-				}
-			}
-			// Now our child rows should exist, so we'll try once more to add the mapping.
-			if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
+		if mysqlerr.Number != sqlChildRowForeignKeyError {
+			return createdSnack, createdLocation, err
+		}
+		// Remediate the sqlChildRowForeignKeyError.
+		createdSnack = true
+		if err := s.CreateSnack(ctx, snackBarcode, ""); err != nil {
+			createdSnack = false
+			// Move on if it already exists.
+			if c := status.Code(err); c != codes.AlreadyExists {
 				return createdSnack, createdLocation, err
 			}
-			return createdSnack, createdLocation, nil
 		}
-		return createdSnack, createdLocation, err
+		createdLocation = true
+		if err := s.CreateLocation(ctx, locationName); err != nil {
+			createdLocation = false
+			// Move on if it already exists
+			if c := status.Code(err); c != codes.AlreadyExists {
+				return createdSnack, createdLocation, err
+			}
+		}
+		// Now our child rows should exist, so we'll try once more to add the mapping.
+		if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
+			return createdSnack, createdLocation, err
+		}
 	}
 	return createdSnack, createdLocation, nil // false, false, nil
 }

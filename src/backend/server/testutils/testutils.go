@@ -147,7 +147,38 @@ func AddSnackMappingT(ctx context.Context, t *testing.T, db *sql.DB, snackBarcod
 	}
 }
 
-// TODO: Add tests for SnackKeyMapComparer.
+func snackKeyMapComparerFunc(x, y map[*sipb.Snack]int) bool {
+	if len(x) != len(y) {
+		return false
+	}
+
+	xKeys := []*sipb.Snack{}
+	for k := range x {
+		xKeys = append(xKeys, k)
+	}
+	sort.SliceStable(xKeys, func(i, j int) bool {
+		return xKeys[i].GetBarcode() < xKeys[j].GetBarcode()
+	})
+
+	yKeys := []*sipb.Snack{}
+	for k := range y {
+		yKeys = append(yKeys, k)
+	}
+	sort.SliceStable(yKeys, func(i, j int) bool {
+		return yKeys[i].GetBarcode() < yKeys[j].GetBarcode()
+	})
+
+	if !cmp.Equal(xKeys, yKeys, cmpopts.IgnoreUnexported(sipb.Snack{})) {
+		return false
+	}
+
+	for i := range xKeys {
+		if !cmp.Equal(x[xKeys[i]], y[yKeys[i]]) {
+			return false
+		}
+	}
+	return true
+}
 
 // SnackKeyMapComparer compares a single-depth map with a *sipb.Snack as the key.
 // cmp.Equal really does not like comparing proto.Message structs, even with
@@ -165,36 +196,5 @@ func AddSnackMappingT(ctx context.Context, t *testing.T, db *sql.DB, snackBarcod
 //     t.Error()
 //   }
 func SnackKeyMapComparer() cmp.Option {
-	return cmp.Comparer(func(x, y map[*sipb.Snack]int) bool {
-		if len(x) != len(y) {
-			return false
-		}
-
-		xKeys := []*sipb.Snack{}
-		for k := range x {
-			xKeys = append(xKeys, k)
-		}
-		sort.SliceStable(xKeys, func(i, j int) bool {
-			return xKeys[i].GetBarcode() < xKeys[j].GetBarcode()
-		})
-
-		yKeys := []*sipb.Snack{}
-		for k := range y {
-			yKeys = append(yKeys, k)
-		}
-		sort.SliceStable(yKeys, func(i, j int) bool {
-			return yKeys[i].GetBarcode() < yKeys[j].GetBarcode()
-		})
-
-		if !cmp.Equal(xKeys, yKeys, cmpopts.IgnoreUnexported(sipb.Snack{})) {
-			return false
-		}
-
-		for i := range xKeys {
-			if !cmp.Equal(x[xKeys[i]], y[yKeys[i]]) {
-				return false
-			}
-		}
-		return true
-	})
+	return cmp.Comparer(snackKeyMapComparerFunc)
 }

@@ -17,7 +17,6 @@ package connector
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -209,7 +208,8 @@ func TestSuccess(t *testing.T) {
 		testutils.CreateTablesT(ctx, t, db)
 		defer testutils.DropTablesT(ctx, t, db)
 
-		testutils.AddSnackT(ctx, t, db, &sipb.Snack{Barcode: "1337", Name: "leetTreat"})
+		snack := &sipb.Snack{Barcode: "1337", Name: "leetTreat"}
+		testutils.AddSnackT(ctx, t, db, snack)
 		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "cupboard"})
 		testutils.AddSnackMappingT(ctx, t, db, "1337", "cupboard", 1)
 
@@ -225,27 +225,89 @@ func TestSuccess(t *testing.T) {
 			t.Errorf("si.AddSnack(ctx, %q, %q) = got createdLocation true, want false", "1337", "cupboard")
 		}
 
-		// TODO: move this to a ListMappings call.
-		var count int
-		selectQuery := fmt.Sprintf("SELECT numPresent FROM LocationContents WHERE snackBarcode IN (%q) AND locationName IN (%q)", "1337", "cupboard")
-		rows, err := db.QueryContext(ctx, selectQuery)
+		got, err := si.ListContents(ctx, "cupboard")
 		if err != nil {
-			t.Fatalf("db.QueryContext(ctx, %q) = got err %v, want err nil", selectQuery, err)
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
-			t.Fatalf("db.QueryContext(ctx, %q) = got 0 rows, want 1", selectQuery)
-		}
-		if err = rows.Scan(&count); err != nil {
-			t.Fatalf("rows.Scan(&count) = got err %v, want err nil", err)
-		}
-		if err = rows.Err(); err != nil {
-			t.Fatalf("rows.Err() = got err %v, want err nil", err)
+			t.Errorf("si.ListContents(ctx, %q) = got err %v, want err nil", "cupboard", err)
 		}
 
-		if count != 2 {
-			t.Errorf("si.AddSnack(ctx, %q, %q) = got count %d, want 2", "1337", "cupboard", count)
+		want := map[string]map[*sipb.Snack]int{
+			"cupboard": map[*sipb.Snack]int{
+				snack: 2,
+			},
+		}
+
+		if len(got) != len(want) {
+			t.Errorf("si.ListContents(ctx, %q) = got %v, want %v", "cupboard", got, want)
+		}
+		if !cmp.Equal(got["cupboard"], want["cupboard"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+			t.Errorf("si.Listcontents(ctx, %q) = \ngot %v,\n want %v", "cupboard", got["cupboard"], want["cupboard"])
+		}
+	})
+
+	t.Run("AddSnack_AddsChildRows", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		si := &SQLImpl{db: db}
+		createdSnack, createdLocation, err := si.AddSnack(ctx, "1337", "cupboard")
+		if err != nil {
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got err %v, want err nil", "1337", "cupboard", err)
+		}
+		if !createdSnack {
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got createdSnack false, want true", "1337", "cupboard")
+		}
+		if !createdLocation {
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got createdLocation false, want true", "1337", "cupboard")
+		}
+
+		got, err := si.ListContents(ctx, "cupboard")
+		if err != nil {
+			t.Errorf("si.ListContents(ctx, %q) = got err %v, want err nil", "cupboard", err)
+		}
+
+		snack := &sipb.Snack{Barcode: "1337"}
+		want := map[string]map[*sipb.Snack]int{
+			"cupboard": map[*sipb.Snack]int{
+				snack: 1,
+			},
+		}
+
+		if len(got) != len(want) {
+			t.Errorf("si.ListContents(ctx, %q) = got %v, want %v", "cupboard", got, want)
+		}
+		if !cmp.Equal(got["cupboard"], want["cupboard"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+			t.Errorf("si.ListCntents(ctx, %q) = \ngot %v,\n want %v", "cupboard", got["cupboard"], want["cupboard"])
+		}
+	})
+
+	t.Run("ListContents", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		snack := &sipb.Snack{Barcode: "1337", Name: "leetTreat"}
+		testutils.AddSnackT(ctx, t, db, snack)
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "cupboard"})
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "fridge"})
+		testutils.AddSnackMappingT(ctx, t, db, "1337", "cupboard", 1)
+		testutils.AddSnackMappingT(ctx, t, db, "1337", "fridge", 1)
+
+		si := &SQLImpl{db: db}
+		got, err := si.ListContents(ctx, "fridge")
+		if err != nil {
+			t.Errorf("si.ListContents(ctx, %q) = got err %v, want err nil", "fridge", err)
+		}
+
+		want := map[string]map[*sipb.Snack]int{
+			"fridge": map[*sipb.Snack]int{
+				snack: 1,
+			},
+		}
+
+		if len(got) != len(want) {
+			t.Errorf("si.ListContents(ctx, %q) = got %v, want %v", "fridge", got, want)
+		}
+		if !cmp.Equal(got["fridge"], want["fridge"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+			t.Errorf("si.Listcontents(ctx, %q) = \ngot %v,\n want %v", "fridge", got["cupboard"], want["cupboard"])
 		}
 	})
 
@@ -353,7 +415,21 @@ func TestError(t *testing.T) {
 	t.Run("ListLocations_SelectError", func(t *testing.T) {
 		si := &SQLImpl{db: db}
 		if _, err := si.ListLocations(ctx); err == nil {
-			t.Fatalf("si.ListLocations(ctx) = got err nil, want err")
+			t.Errorf("si.ListLocations(ctx) = got err nil, want err")
+		}
+	})
+
+	t.Run("AddSnack_UpdateError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if _, _, err := si.AddSnack(ctx, "snack", "location"); err == nil {
+			t.Errorf("si.AddSnack(ctx, %q, %q)) = got err nil, want err", "snack", "location")
+		}
+	})
+
+	t.Run("ListContents_SelectError", func(t *testing.T) {
+		si := &SQLImpl{db: db}
+		if _, err := si.ListContents(ctx, ""); err == nil {
+			t.Error("si.ListContents(ctx, \"\") = got err nil, want err")
 		}
 	})
 }
