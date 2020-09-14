@@ -36,7 +36,7 @@ func TestCreateSnack(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateSnack(context.Background(), req); err != nil {
-		t.Fatalf("si.CreateSnack(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.CreateSnack(ctx, %v) = got err %v, want err nil", req, err)
 	}
 }
 
@@ -51,7 +51,7 @@ func TestCreateSnack_AlreadyExists(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateSnack(context.Background(), req); err == nil {
-		t.Fatalf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -66,7 +66,7 @@ func TestCreateSnack_Internal(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateSnack(context.Background(), req); err == nil {
-		t.Fatalf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.CreateSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -82,7 +82,7 @@ func TestListSnacks(t *testing.T) {
 	si := snackInventoryServer{c: fdbc}
 	res, err := si.ListSnacks(context.Background(), &sipb.ListSnacksRequest{})
 	if err != nil {
-		t.Fatalf("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got err %v, want err nil", err)
+		t.Errorf("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got err %v, want err nil", err)
 	}
 
 	want := &sipb.ListSnacksResponse{
@@ -92,7 +92,7 @@ func TestListSnacks(t *testing.T) {
 		res, want,
 		cmpopts.IgnoreUnexported(sipb.ListSnacksResponse{}),
 		cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-		t.Fatalf("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got diff (-got +want): %s", diff)
+		t.Errorf("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got diff (-got +want): %s", diff)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestListSnacks_StorageError(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.ListSnacks(context.Background(), &sipb.ListSnacksRequest{}); err == nil {
-		t.Fatal("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got err nil, want err")
+		t.Error("si.ListSnacks(ctx, &sipb.ListSnacksRequest{}) = got err nil, want err")
 	}
 }
 
@@ -118,7 +118,7 @@ func TestUpdateSnack(t *testing.T) {
 		},
 	}
 	if _, err := si.UpdateSnack(context.Background(), req); err != nil {
-		t.Fatalf("si.UpdateSnack(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.UpdateSnack(ctx, %v) = got err %v, want err nil", req, err)
 	}
 }
 
@@ -135,7 +135,7 @@ func TestUpdateSnack_Error(t *testing.T) {
 		},
 	}
 	if _, err := si.UpdateSnack(context.Background(), req); err == nil {
-		t.Fatalf("si.UpdateSnack(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.UpdateSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -145,7 +145,7 @@ func TestDeleteSnack(t *testing.T) {
 	si := snackInventoryServer{c: fdbc}
 	req := &sipb.DeleteSnackRequest{Barcode: "123"}
 	if _, err := si.DeleteSnack(context.Background(), req); err != nil {
-		t.Fatalf("si.DeleteSnack(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.DeleteSnack(ctx, %v) = got err %v, want err nil", req, err)
 	}
 }
 
@@ -157,7 +157,7 @@ func TestDeleteSnack_Error(t *testing.T) {
 	si := snackInventoryServer{c: fdbc}
 	req := &sipb.DeleteSnackRequest{Barcode: "123"}
 	if _, err := si.DeleteSnack(context.Background(), req); err == nil {
-		t.Fatalf("si.DeleteSnack(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.DeleteSnack(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -170,7 +170,7 @@ func TestCreateLocation(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateLocation(context.Background(), req); err != nil {
-		t.Fatalf("si.CreateLocation(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.CreateLocation(ctx, %v) = got err %v, want err nil", req, err)
 	}
 }
 
@@ -185,7 +185,7 @@ func TestCreateLocation_AlreadyExists(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateLocation(context.Background(), req); err == nil {
-		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -200,7 +200,7 @@ func TestCreateLocation_Internal(t *testing.T) {
 
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.CreateLocation(context.Background(), req); err == nil {
-		t.Fatalf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.CreateLocation(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -217,7 +217,7 @@ func TestListLocations(t *testing.T) {
 	si := snackInventoryServer{c: fdbc}
 	got, err := si.ListLocations(context.Background(), req)
 	if err != nil {
-		t.Fatalf("si.ListLocations(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.ListLocations(ctx, %v) = got err %v, want err nil", req, err)
 	}
 
 	want := &sipb.ListLocationsResponse{
@@ -231,7 +231,7 @@ func TestListLocations(t *testing.T) {
 		got, want,
 		cmpopts.IgnoreUnexported(sipb.ListLocationsResponse{}),
 		cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
-		t.Fatalf("si.ListLocations(ctx, %v) = got diff (-got +want): %s", req, diff)
+		t.Errorf("si.ListLocations(ctx, %v) = got diff (-got +want): %s", req, diff)
 	}
 }
 
@@ -243,7 +243,7 @@ func TestListLocationsError(t *testing.T) {
 	req := &sipb.ListLocationsRequest{}
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.ListLocations(context.Background(), req); err == nil {
-		t.Fatalf("si.ListLocations(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.ListLocations(ctx, %v) = got err nil, want err", req)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestDeleteLocation(t *testing.T) {
 	req := &sipb.DeleteLocationRequest{Name: "fridge"}
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.DeleteLocation(context.Background(), req); err != nil {
-		t.Fatalf("si.DeleteLocation(ctx, %v) = got err %v, want err nil", req, err)
+		t.Errorf("si.DeleteLocation(ctx, %v) = got err %v, want err nil", req, err)
 	}
 }
 
@@ -265,6 +265,6 @@ func TestDeleteLocationError(t *testing.T) {
 	req := &sipb.DeleteLocationRequest{}
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.DeleteLocation(context.Background(), req); err == nil {
-		t.Fatalf("si.DeleteLocation(ctx, %v) = got err nil, want err", req)
+		t.Errorf("si.DeleteLocation(ctx, %v) = got err nil, want err", req)
 	}
 }

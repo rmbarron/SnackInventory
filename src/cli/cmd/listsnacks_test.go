@@ -46,7 +46,7 @@ func TestListSnacks(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := listSnacks(nil, nil); err != nil {
-		t.Fatalf("listSnacks(nil, nil) = got err %v, want nil", err)
+		t.Errorf("listSnacks(nil, nil) = got err %v, want nil", err)
 	}
 }
 
@@ -63,6 +63,6 @@ func TestListSnacks_ServerError(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := listSnacks(nil, nil); err == nil {
-		t.Fatal("listSnacks(nil, nil) = got err nil, want err")
+		t.Error("listSnacks(nil, nil) = got err nil, want err")
 	}
 }

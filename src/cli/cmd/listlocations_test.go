@@ -45,7 +45,7 @@ func TestListLocations(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := listLocations(nil, nil); err != nil {
-		t.Fatalf("listLocations(nil, nil) = got err %v, want err nil", err)
+		t.Errorf("listLocations(nil, nil) = got err %v, want err nil", err)
 	}
 }
 
@@ -62,6 +62,6 @@ func TestListLocations_ServerError(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := listLocations(nil, nil); err == nil {
-		t.Fatal("listLocations(nil, nil) = got err nil, want err")
+		t.Error("listLocations(nil, nil) = got err nil, want err")
 	}
 }

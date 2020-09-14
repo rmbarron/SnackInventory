@@ -39,7 +39,7 @@ func TestCreateSnack(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := createSnack(nil, nil); err != nil {
-		t.Fatalf("createSnack(nil, nil) = got err %v, want nil", err)
+		t.Errorf("createSnack(nil, nil) = got err %v, want nil", err)
 	}
 }
 
@@ -56,6 +56,6 @@ func TestCreateSnack_ServerError(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := createSnack(nil, nil); err == nil {
-		t.Fatal("createSnack(nil, nil) = got err nil, want err")
+		t.Error("createSnack(nil, nil) = got err nil, want err")
 	}
 }

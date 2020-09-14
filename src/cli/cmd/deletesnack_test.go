@@ -38,7 +38,7 @@ func TestDeleteSnack(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := deleteSnack(nil, nil); err != nil {
-		t.Fatalf("deleteSnack(nil, nil) = got err %v, want nil", err)
+		t.Errorf("deleteSnack(nil, nil) = got err %v, want nil", err)
 	}
 }
 
@@ -55,6 +55,6 @@ func TestDeleteSnack_ServerError(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := deleteSnack(nil, nil); err == nil {
-		t.Fatal("deleteSnack(nil, nil) = got err nil, want err")
+		t.Error("deleteSnack(nil, nil) = got err nil, want err")
 	}
 }

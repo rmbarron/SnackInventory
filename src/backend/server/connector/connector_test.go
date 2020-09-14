@@ -33,6 +33,9 @@ import (
 // So, the testcases here follow a specific pattern of spinning up the instance
 // as setup, then each subtest creates tables -> performs test -> drops tables.
 
+// NOTE: If this test times out, it leaks mysqld processes running as the
+// user that executed the tests. These will need to be manually cleaned up.
+
 // TestSuccess is a parent test to create a mariadb instance for subtests.
 func TestSuccess(t *testing.T) {
 	ctx := context.Background()
@@ -59,10 +62,10 @@ func TestSuccess(t *testing.T) {
 		}
 		got, err := si.ListSnacks(ctx)
 		if err != nil {
-			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListSnacks(ctx) = got err %v, want err nil", err)
 		}
 		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
+			t.Errorf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
 		}
 	})
 
@@ -86,7 +89,7 @@ func TestSuccess(t *testing.T) {
 		}
 
 		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
+			t.Errorf("si.ListSnacks(ctx) = got diff (-got +want): %s", diff)
 		}
 	})
 
@@ -109,10 +112,10 @@ func TestSuccess(t *testing.T) {
 		}
 		got, err := si.ListSnacks(ctx)
 		if err != nil {
-			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListSnacks(ctx) = got err %v, want err nil", err)
 		}
 		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Snack{})); diff != "" {
-			t.Fatalf("si.ListSnacks(ctx) = got diff (-got +want): %s\n", diff)
+			t.Errorf("si.ListSnacks(ctx) = got diff (-got +want): %s\n", diff)
 		}
 	})
 
@@ -124,15 +127,15 @@ func TestSuccess(t *testing.T) {
 
 		si := &SQLImpl{db: db}
 		if err := si.DeleteSnack(ctx, "123"); err != nil {
-			t.Fatalf("si.DeleteSnack(ctx, %q) = got err %v, want err nil", "123", err)
+			t.Errorf("si.DeleteSnack(ctx, %q) = got err %v, want err nil", "123", err)
 		}
 
 		got, err := si.ListSnacks(ctx)
 		if err != nil {
-			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListSnacks(ctx) = got err %v, want err nil", err)
 		}
 		if len(got) != 0 {
-			t.Fatalf("si.ListSnacks(ctx) = got %v, want []*sipb.Snack{}", got)
+			t.Errorf("si.ListSnacks(ctx) = got %v, want []*sipb.Snack{}", got)
 		}
 	})
 
@@ -142,7 +145,7 @@ func TestSuccess(t *testing.T) {
 
 		si := &SQLImpl{db: db}
 		if err := si.CreateLocation(ctx, "fridge"); err != nil {
-			t.Fatalf("si.CreateLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
+			t.Errorf("si.CreateLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
 		}
 
 		want := []*sipb.Location{
@@ -152,10 +155,10 @@ func TestSuccess(t *testing.T) {
 		}
 		got, err := si.ListLocations(ctx)
 		if err != nil {
-			t.Fatalf("si.ListSnacks(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListSnacks(ctx) = got err %v, want err nil", err)
 		}
 		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
-			t.Fatalf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
+			t.Errorf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
 		}
 	})
 
@@ -168,7 +171,7 @@ func TestSuccess(t *testing.T) {
 		si := &SQLImpl{db: db}
 		got, err := si.ListLocations(ctx)
 		if err != nil {
-			t.Fatalf("si.ListLocations(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListLocations(ctx) = got err %v, want err nil", err)
 		}
 
 		want := []*sipb.Location{
@@ -178,7 +181,7 @@ func TestSuccess(t *testing.T) {
 		}
 
 		if diff := cmp.Diff(got, want, cmpopts.IgnoreUnexported(sipb.Location{})); diff != "" {
-			t.Fatalf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
+			t.Errorf("si.ListLocations(ctx) = got diff (-got +want): %s", diff)
 		}
 	})
 
@@ -190,15 +193,15 @@ func TestSuccess(t *testing.T) {
 
 		si := &SQLImpl{db: db}
 		if err := si.DeleteLocation(ctx, "fridge"); err != nil {
-			t.Fatalf("si.DeleteLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
+			t.Errorf("si.DeleteLocation(ctx, %q) = got err %v, want err nil", "fridge", err)
 		}
 
 		got, err := si.ListLocations(ctx)
 		if err != nil {
-			t.Fatalf("si.ListLocations(ctx) = got err %v, want err nil", err)
+			t.Errorf("si.ListLocations(ctx) = got err %v, want err nil", err)
 		}
 		if len(got) != 0 {
-			t.Fatalf("si.ListLocations(ctx) = got %v, want []*sipb.Location{}", got)
+			t.Errorf("si.ListLocations(ctx) = got %v, want []*sipb.Location{}", got)
 		}
 	})
 
@@ -213,13 +216,13 @@ func TestSuccess(t *testing.T) {
 		si := &SQLImpl{db: db}
 		createdSnack, createdLocation, err := si.AddSnack(ctx, "1337", "cupboard")
 		if err != nil {
-			t.Fatalf("si.AddSnack(ctx, %q, %q) = got err %v, want err nil", "1337", "cupboard", err)
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got err %v, want err nil", "1337", "cupboard", err)
 		}
 		if createdSnack {
-			t.Fatalf("si.AddSnack(ctx, %q, %q) = got createdSnack true, want false", "1337", "cupboard")
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got createdSnack true, want false", "1337", "cupboard")
 		}
 		if createdLocation {
-			t.Fatalf("si.AddSnack(ctx, %q, %q) = got createdLocation true, want false", "1337", "cupboard")
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got createdLocation true, want false", "1337", "cupboard")
 		}
 
 		// TODO: move this to a ListMappings call.
@@ -242,7 +245,7 @@ func TestSuccess(t *testing.T) {
 		}
 
 		if count != 2 {
-			t.Fatalf("si.AddSnack(ctx, %q, %q) = got count %d, want 2", "1337", "cupboard", count)
+			t.Errorf("si.AddSnack(ctx, %q, %q) = got count %d, want 2", "1337", "cupboard", count)
 		}
 	})
 
@@ -260,7 +263,7 @@ func TestSuccess(t *testing.T) {
 		si := &SQLImpl{db: db}
 		got, err := si.ListContents(ctx, "")
 		if err != nil {
-			t.Fatalf("si.Listcontents(ctx, \"\") = got err %v, want err nil", err)
+			t.Errorf("si.Listcontents(ctx, \"\") = got err %v, want err nil", err)
 		}
 
 		want := map[string]map[*sipb.Snack]int{
@@ -273,14 +276,14 @@ func TestSuccess(t *testing.T) {
 		}
 
 		if len(got) != len(want) {
-			t.Fatalf("si.ListContents(ctx, \"\") = got %v, want %v", got, want)
+			t.Errorf("si.ListContents(ctx, \"\") = got %v, want %v", got, want)
 		}
 
 		if !cmp.Equal(got["cupboard"], want["cupboard"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
-			t.Fatalf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
+			t.Errorf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
 		}
 		if !cmp.Equal(got["fridge"], want["fridge"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
-			t.Fatalf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
+			t.Errorf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
 		}
 	})
 }
@@ -298,7 +301,7 @@ func TestError(t *testing.T) {
 	t.Run("CreateSnack_SelectError", func(t *testing.T) {
 		si := &SQLImpl{db: db}
 		if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
-			t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+			t.Errorf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
 		}
 	})
 
@@ -310,28 +313,28 @@ func TestError(t *testing.T) {
 
 		si := &SQLImpl{db: db}
 		if err := si.CreateSnack(ctx, "1", "testsnack"); err == nil {
-			t.Fatalf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
+			t.Errorf("si.CreateSnack(ctx, %q, %q) = got err nil, want err", "1", "testsnack")
 		}
 	})
 
 	t.Run("ListSnacks_SelectError", func(t *testing.T) {
 		si := &SQLImpl{db: db}
 		if _, err := si.ListSnacks(ctx); err == nil {
-			t.Fatal("si.ListSnacks(ctx) = got err nil, want err")
+			t.Error("si.ListSnacks(ctx) = got err nil, want err")
 		}
 	})
 
 	t.Run("UpdateSnack_Error", func(t *testing.T) {
 		si := &SQLImpl{db: db}
 		if err := si.UpdateSnack(ctx, "123", "realsnack"); err == nil {
-			t.Fatalf("si.UpdateSnack(ctx, %q, %q) = got err nil, want err", "123", "realsnack")
+			t.Errorf("si.UpdateSnack(ctx, %q, %q) = got err nil, want err", "123", "realsnack")
 		}
 	})
 
 	t.Run("CreateLocation_SelectError", func(t *testing.T) {
 		si := &SQLImpl{db: db}
 		if err := si.CreateLocation(ctx, "fridge"); err == nil {
-			t.Fatalf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
+			t.Errorf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
 		}
 	})
 
@@ -343,7 +346,7 @@ func TestError(t *testing.T) {
 
 		si := &SQLImpl{db: db}
 		if err := si.CreateLocation(ctx, "fridge"); err == nil {
-			t.Fatalf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
+			t.Errorf("si.CreateLocation(ctx, %q) = got err nil, want err", "fridge")
 		}
 	})
 

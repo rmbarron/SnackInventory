@@ -39,7 +39,7 @@ func TestCreateLocation(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := createLocation(nil, nil); err != nil {
-		t.Fatalf("createLocation(nil, nil) = got err %v, want nil", err)
+		t.Errorf("createLocation(nil, nil) = got err %v, want nil", err)
 	}
 }
 
@@ -56,6 +56,6 @@ func TestCreateLocation_ServerError(t *testing.T) {
 	defer func() { address = tmpAddr }()
 
 	if err := createLocation(nil, nil); err == nil {
-		t.Fatal("createLocation(nil, nil) = got err nil, want err")
+		t.Error("createLocation(nil, nil) = got err nil, want err")
 	}
 }
