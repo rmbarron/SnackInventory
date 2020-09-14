@@ -58,4 +58,5 @@ func init() {
 	rootCmd.AddCommand(deleteLocationCmd)
 
 	rootCmd.AddCommand(addSnackCmd)
+	rootCmd.AddCommand(listContentsCmd)
 }

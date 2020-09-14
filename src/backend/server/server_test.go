@@ -25,6 +25,7 @@ import (
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestCreateSnack(t *testing.T) {
@@ -266,5 +267,75 @@ func TestDeleteLocationError(t *testing.T) {
 	si := snackInventoryServer{c: fdbc}
 	if _, err := si.DeleteLocation(context.Background(), req); err == nil {
 		t.Errorf("si.DeleteLocation(ctx, %v) = got err nil, want err", req)
+	}
+}
+
+func TestAddSnack(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		AddSnackCreatedSnack:    true,
+		AddSnackCreatedLocation: true,
+	}
+
+	req := &sipb.AddSnackRequest{
+		SnackBarcode: "1337",
+		LocationName: "fridge",
+	}
+	si := snackInventoryServer{c: fdbc}
+	got, err := si.AddSnack(context.Background(), req)
+	if err != nil {
+		t.Errorf("si.AddSnack(ctx, %v) = got err %v, want err nil", req, err)
+	}
+
+	want := &sipb.AddSnackResponse{
+		SnackCreated:    true,
+		LocationCreated: true,
+	}
+
+	if !cmp.Equal(got, want, protocmp.Transform()) {
+		t.Errorf("si.AddSnack(ctx, %v) = got %v, want %v", req, got, want)
+	}
+}
+
+func TestListContents(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		ListContentsRes: map[string]map[*sipb.Snack]int{
+			"fridge": map[*sipb.Snack]int{
+				&sipb.Snack{Barcode: "1337"}: 1,
+			},
+		},
+	}
+
+	req := &sipb.ListContentsRequest{}
+	si := snackInventoryServer{c: fdbc}
+	got, err := si.ListContents(context.Background(), req)
+	if err != nil {
+		t.Errorf("si.ListContents(ctx, %v) = got err %v, want err nil", req, err)
+	}
+
+	want := &sipb.ListContentsResponse{
+		LocationToContents: map[string]*sipb.Contents{
+			"fridge": &sipb.Contents{
+				SnackToCount: map[string]int32{"1337": 1},
+				NameToSnack: map[string]*sipb.Snack{
+					"1337": &sipb.Snack{Barcode: "1337"},
+				},
+			},
+		},
+	}
+
+	if !cmp.Equal(got, want, protocmp.Transform(), cmpopts.IgnoreUnexported(sipb.Snack{})) {
+		t.Errorf("si.ListContents(ctx, %v) = got %v, want %v", req, got, want)
+	}
+}
+
+func TestListContentsError(t *testing.T) {
+	fdbc := &fakedbconnector.FakeDBConnector{
+		ListContentsErr: status.Error(codes.Internal, "something went wrong"),
+	}
+
+	req := &sipb.ListContentsRequest{}
+	si := snackInventoryServer{c: fdbc}
+	if _, err := si.ListContents(context.Background(), req); err == nil {
+		t.Errorf("si.ListContents(ctx, %v) = got err nil, want err", req)
 	}
 }

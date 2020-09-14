@@ -63,6 +63,7 @@ type dbConnector interface {
 
 	// Location Contents Operations
 	AddSnack(ctx context.Context, snackBarcode, locationName string) (createdSnack, createdLocation bool, err error)
+	ListContents(ctx context.Context, locationName string) (map[string]map[*sipb.Snack]int, error)
 }
 
 type snackInventoryServer struct {
@@ -140,7 +141,30 @@ func (s *snackInventoryServer) AddSnack(ctx context.Context, req *sipb.AddSnackR
 }
 
 func (s *snackInventoryServer) ListContents(ctx context.Context, req *sipb.ListContentsRequest) (*sipb.ListContentsResponse, error) {
-	return &sipb.ListContentsResponse{}, nil
+	dbContents, err := s.c.ListContents(ctx, req.GetLocationName())
+	if err != nil {
+		return &sipb.ListContentsResponse{}, status.Errorf(codes.Internal, "could not list contents: %v", err)
+	}
+
+	locationToContents := map[string]*sipb.Contents{}
+
+	for location, snackMap := range dbContents {
+		snackToCount := map[string]int32{}
+		nameToSnack := map[string]*sipb.Snack{}
+		for snack, count := range snackMap {
+			// This int32 typecast is an error waiting to happen.
+			// TODO: refactor db schema & ListContents return to be int->int32.
+			snackToCount[snack.GetBarcode()] = int32(count)
+			nameToSnack[snack.GetBarcode()] = snack
+		}
+		locationToContents[location] = &sipb.Contents{
+			SnackToCount: snackToCount,
+			NameToSnack:  nameToSnack,
+		}
+	}
+	return &sipb.ListContentsResponse{
+		LocationToContents: locationToContents,
+	}, nil
 }
 
 func main() {

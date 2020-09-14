@@ -105,6 +105,14 @@ message AddSnackResponse {
   bool locationCreated = 2;
 }
 
+// TODO: These keys are 'barcode', not 'name'. They should be renamed accordingly.
+
+// TODO: Contents and ListContentsResponse could likely be represented better
+// as bare repeated protos. As is, map entries are a tad smelly.
+
+// message Contents describes the count of each snack inside a location.
+// This is needed to provide the entire Snack proto, as a proto message cannot
+// be a key in a proto map for ListContentsResponse.
 message Contents {
   map<string, int32> snackToCount = 1;
   map<string, Snack> nameToSnack = 2;
