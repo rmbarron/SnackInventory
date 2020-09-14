@@ -94,15 +94,28 @@ message DeleteLocationResponse {}
 // Adds a snack to a location.
 // Will create minimal entries in the snack & location registries if either
 // doesn't exist.
-message AddSnackRequest{
+message AddSnackRequest {
   string snackBarcode = 1;
   string locationName = 2;
 }
 
-message AddSnackResponse{
+message AddSnackResponse {
   // Whether or not minimal entries for snack / location were added.
   bool snackCreated = 1;
   bool locationCreated = 2;
+}
+
+message Contents {
+  map<string, int32> snackToCount = 1;
+  map<string, Snack> nameToSnack = 2;
+}
+
+message ListContentsRequest {
+  string locationName = 1;
+}
+
+message ListContentsResponse {
+  map<string, Contents> locationToContents = 1;
 }
 
 service SnackInventory {
@@ -128,4 +141,6 @@ service SnackInventory {
   // ======= Location Contents Operations ==================
 
   rpc AddSnack(AddSnackRequest) returns (AddSnackResponse) {}
+
+  rpc ListContents(ListContentsRequest) returns (ListContentsResponse) {}
 }

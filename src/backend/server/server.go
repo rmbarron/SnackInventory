@@ -139,6 +139,10 @@ func (s *snackInventoryServer) AddSnack(ctx context.Context, req *sipb.AddSnackR
 	}, err
 }
 
+func (s *snackInventoryServer) ListContents(ctx context.Context, req *sipb.ListContentsRequest) (*sipb.ListContentsResponse, error) {
+	return &sipb.ListContentsResponse{}, nil
+}
+
 func main() {
 	flag.Parse()
 

@@ -25,6 +25,7 @@ type SnackInventoryClient interface {
 	ListLocations(ctx context.Context, in *ListLocationsRequest, opts ...grpc.CallOption) (*ListLocationsResponse, error)
 	DeleteLocation(ctx context.Context, in *DeleteLocationRequest, opts ...grpc.CallOption) (*DeleteLocationResponse, error)
 	AddSnack(ctx context.Context, in *AddSnackRequest, opts ...grpc.CallOption) (*AddSnackResponse, error)
+	ListContents(ctx context.Context, in *ListContentsRequest, opts ...grpc.CallOption) (*ListContentsResponse, error)
 }
 
 type snackInventoryClient struct {
@@ -139,6 +140,19 @@ func (c *snackInventoryClient) AddSnack(ctx context.Context, in *AddSnackRequest
 	return out, nil
 }
 
+var snackInventoryListContentsStreamDesc = &grpc.StreamDesc{
+	StreamName: "ListContents",
+}
+
+func (c *snackInventoryClient) ListContents(ctx context.Context, in *ListContentsRequest, opts ...grpc.CallOption) (*ListContentsResponse, error) {
+	out := new(ListContentsResponse)
+	err := c.cc.Invoke(ctx, "/snackinventory.SnackInventory/ListContents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SnackInventoryService is the service API for SnackInventory service.
 // Fields should be assigned to their respective handler implementations only before
 // RegisterSnackInventoryService is called.  Any unassigned fields will result in the
@@ -152,6 +166,7 @@ type SnackInventoryService struct {
 	ListLocations  func(context.Context, *ListLocationsRequest) (*ListLocationsResponse, error)
 	DeleteLocation func(context.Context, *DeleteLocationRequest) (*DeleteLocationResponse, error)
 	AddSnack       func(context.Context, *AddSnackRequest) (*AddSnackResponse, error)
+	ListContents   func(context.Context, *ListContentsRequest) (*ListContentsResponse, error)
 }
 
 func (s *SnackInventoryService) createSnack(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -290,6 +305,23 @@ func (s *SnackInventoryService) addSnack(_ interface{}, ctx context.Context, dec
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func (s *SnackInventoryService) listContents(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListContentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return s.ListContents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     s,
+		FullMethod: "/snackinventory.SnackInventory/ListContents",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return s.ListContents(ctx, req.(*ListContentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // RegisterSnackInventoryService registers a service implementation with a gRPC server.
 func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryService) {
@@ -334,6 +366,11 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			return nil, status.Errorf(codes.Unimplemented, "method AddSnack not implemented")
 		}
 	}
+	if srvCopy.ListContents == nil {
+		srvCopy.ListContents = func(context.Context, *ListContentsRequest) (*ListContentsResponse, error) {
+			return nil, status.Errorf(codes.Unimplemented, "method ListContents not implemented")
+		}
+	}
 	sd := grpc.ServiceDesc{
 		ServiceName: "snackinventory.SnackInventory",
 		Methods: []grpc.MethodDesc{
@@ -368,6 +405,10 @@ func RegisterSnackInventoryService(s grpc.ServiceRegistrar, srv *SnackInventoryS
 			{
 				MethodName: "AddSnack",
 				Handler:    srvCopy.addSnack,
+			},
+			{
+				MethodName: "ListContents",
+				Handler:    srvCopy.listContents,
 			},
 		},
 		Streams:  []grpc.StreamDesc{},
@@ -425,6 +466,11 @@ func NewSnackInventoryService(s interface{}) *SnackInventoryService {
 	}); ok {
 		ns.AddSnack = h.AddSnack
 	}
+	if h, ok := s.(interface {
+		ListContents(context.Context, *ListContentsRequest) (*ListContentsResponse, error)
+	}); ok {
+		ns.ListContents = h.ListContents
+	}
 	return ns
 }
 
@@ -441,4 +487,5 @@ type UnstableSnackInventoryService interface {
 	ListLocations(context.Context, *ListLocationsRequest) (*ListLocationsResponse, error)
 	DeleteLocation(context.Context, *DeleteLocationRequest) (*DeleteLocationResponse, error)
 	AddSnack(context.Context, *AddSnackRequest) (*AddSnackResponse, error)
+	ListContents(context.Context, *ListContentsRequest) (*ListContentsResponse, error)
 }

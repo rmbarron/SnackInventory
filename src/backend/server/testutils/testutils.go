@@ -22,8 +22,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	mysqltest "github.com/lestrrat-go/test-mysqld"
 	sipb "github.com/rmbarron/SnackInventory/src/proto/snackinventory"
 )
@@ -142,4 +145,56 @@ func AddSnackMappingT(ctx context.Context, t *testing.T, db *sql.DB, snackBarcod
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		t.Fatalf("db.ExecContext(ctx, %q) = got err %v, want err nil", query, err)
 	}
+}
+
+// TODO: Add tests for SnackKeyMapComparer.
+
+// SnackKeyMapComparer compares a single-depth map with a *sipb.Snack as the key.
+// cmp.Equal really does not like comparing proto.Message structs, even with
+// protocmp.Transform option. However, it does a good job in checking equality
+// of a []*proto.Message. This comparer:
+// - checks that given maps are same length
+// - extracts & sorts keys, then compares the sorted slice.
+// - iterates through the map with the sorted key, comparing values.
+//
+// slice keys and map values are compared using map.Equal, so maps with a
+// larger depth than 1 _may_ work but are not guaranteed.
+//
+// Usage:
+//   if !cmp.Equal(got, want, cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+//     t.Error()
+//   }
+func SnackKeyMapComparer() cmp.Option {
+	return cmp.Comparer(func(x, y map[*sipb.Snack]int) bool {
+		if len(x) != len(y) {
+			return false
+		}
+
+		xKeys := []*sipb.Snack{}
+		for k := range x {
+			xKeys = append(xKeys, k)
+		}
+		sort.SliceStable(xKeys, func(i, j int) bool {
+			return xKeys[i].GetBarcode() < xKeys[j].GetBarcode()
+		})
+
+		yKeys := []*sipb.Snack{}
+		for k := range y {
+			yKeys = append(yKeys, k)
+		}
+		sort.SliceStable(yKeys, func(i, j int) bool {
+			return yKeys[i].GetBarcode() < yKeys[j].GetBarcode()
+		})
+
+		if !cmp.Equal(xKeys, yKeys, cmpopts.IgnoreUnexported(sipb.Snack{})) {
+			return false
+		}
+
+		for i := range xKeys {
+			if !cmp.Equal(x[xKeys[i]], y[yKeys[i]]) {
+				return false
+			}
+		}
+		return true
+	})
 }

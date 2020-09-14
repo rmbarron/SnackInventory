@@ -186,6 +186,7 @@ func (s *SQLImpl) AddSnack(ctx context.Context, snackBarcode, locationName strin
 	}
 	// No rows were affected, which means we need to add a new row.
 	if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
+		// TODO: We can likely rephrase this to remove an indentation block.
 		mysqlerr, ok := err.(*driver.MySQLError)
 		// Add child rows if exec fails because they are missing.
 		if ok && mysqlerr.Number == sqlChildRowForeignKeyError {
@@ -209,9 +210,65 @@ func (s *SQLImpl) AddSnack(ctx context.Context, snackBarcode, locationName strin
 			if _, err := s.db.ExecContext(ctx, "INSERT INTO LocationContents (snackBarcode, locationName, numPresent) VALUES(?, ?, 1)", snackBarcode, locationName); err != nil {
 				return createdSnack, createdLocation, err
 			}
+			return createdSnack, createdLocation, nil
 		}
-		// We've remediated the error, so this is actually a success path.
-		return createdSnack, createdLocation, nil
+		return createdSnack, createdLocation, err
 	}
 	return createdSnack, createdLocation, nil // false, false, nil
+}
+
+// ListContents lists contents of a location.
+// If no location is given, lists contents of all locations.
+// Return value is locationName:Snack:count.
+func (s *SQLImpl) ListContents(ctx context.Context, locationName string) (map[string]map[*sipb.Snack]int, error) {
+	retval := map[string]map[*sipb.Snack]int{}
+	var query string
+	if locationName != "" {
+		query = fmt.Sprintf(
+			`SELECT lc.snackBarcode,
+		 lc.locationName,
+		 lc.numPresent,
+		 s.name as snackName
+		 FROM LocationContents lc
+		 LEFT JOIN SnackRegistry s ON lc.snackBarcode = s.barcode
+		 WHERE lc.locationName IN (%q)`, locationName)
+	} else {
+		query = fmt.Sprint(
+			`SELECT lc.snackBarcode,
+			lc.locationName,
+			lc.numPresent,
+			s.name as snackName
+			FROM LocationContents lc
+			LEFT JOIN SnackRegistry s ON lc.snackBarcode = s.barcode`)
+	}
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var snackBarcode string
+		var locationName string
+		var numPresent int
+		var snackName string
+		if err = rows.Scan(&snackBarcode, &locationName, &numPresent, &snackName); err != nil {
+			return nil, err
+		}
+		locationVal, ok := retval[locationName]
+		if !ok {
+			locationVal = map[*sipb.Snack]int{}
+			retval[locationName] = locationVal
+		}
+
+		snack := &sipb.Snack{
+			Barcode: snackBarcode,
+			Name:    snackName,
+		}
+		locationVal[snack] = numPresent
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return retval, nil
 }

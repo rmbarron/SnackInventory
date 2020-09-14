@@ -35,7 +35,6 @@ import (
 
 // TestSuccess is a parent test to create a mariadb instance for subtests.
 func TestSuccess(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	db, close := testutils.StartMysqldT(ctx, t)
@@ -246,11 +245,48 @@ func TestSuccess(t *testing.T) {
 			t.Fatalf("si.AddSnack(ctx, %q, %q) = got count %d, want 2", "1337", "cupboard", count)
 		}
 	})
+
+	t.Run("ListContents_NoLocation", func(t *testing.T) {
+		testutils.CreateTablesT(ctx, t, db)
+		defer testutils.DropTablesT(ctx, t, db)
+
+		snack := &sipb.Snack{Barcode: "1337", Name: "leetTreat"}
+		testutils.AddSnackT(ctx, t, db, snack)
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "cupboard"})
+		testutils.AddLocationT(ctx, t, db, &sipb.Location{Name: "fridge"})
+		testutils.AddSnackMappingT(ctx, t, db, "1337", "cupboard", 1)
+		testutils.AddSnackMappingT(ctx, t, db, "1337", "fridge", 1)
+
+		si := &SQLImpl{db: db}
+		got, err := si.ListContents(ctx, "")
+		if err != nil {
+			t.Fatalf("si.Listcontents(ctx, \"\") = got err %v, want err nil", err)
+		}
+
+		want := map[string]map[*sipb.Snack]int{
+			"cupboard": map[*sipb.Snack]int{
+				snack: 1,
+			},
+			"fridge": map[*sipb.Snack]int{
+				snack: 1,
+			},
+		}
+
+		if len(got) != len(want) {
+			t.Fatalf("si.ListContents(ctx, \"\") = got %v, want %v", got, want)
+		}
+
+		if !cmp.Equal(got["cupboard"], want["cupboard"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+			t.Fatalf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
+		}
+		if !cmp.Equal(got["fridge"], want["fridge"], cmpopts.IgnoreUnexported(sipb.Snack{}), testutils.SnackKeyMapComparer()) {
+			t.Fatalf("si.Listcontents(ctx, \"\") = \ngot %v,\n want %v", got["cupboard"], want["cupboard"])
+		}
+	})
 }
 
 // TestError is a parent test to create a mariadb instance for subtests.
 func TestError(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	db, close := testutils.StartMysqldT(ctx, t)
